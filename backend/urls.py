@@ -1,25 +1,18 @@
-# backend/urls.py
+from views import google_login, google_callback, logout, profile
 
-from flask import Flask
-import views
-
-def setup_routes(app: Flask):
-    """
-    Function to define and register all routes for the app.
-    """
-
-    urlpatterns = [
-        # Define your endpoints here
-        {"path": "/", "view_func": views.default_path, "name": "defaultPath", "methods": ["GET"]},
-        {"path": "/signup", "view_func": views.signup, "name": "signup", "methods": ["POST"]},
-        {"path": "/login", "view_func": views.login, "name": "login", "methods": ["POST"]},
+def setup_routes(app):
+    # Define your routes here
+    routes = [
+        {"path": "/api/google/login", "view_func": google_login, "methods": ["GET"]},
+        {"path": "/api/google/callback", "view_func": google_callback, "methods": ["GET"]},
+        {"path": "/api/logout", "view_func": logout, "methods": ["GET"]},
+        {"path": "/api/profile", "view_func": profile, "methods": ["GET"]},
     ]
 
-    # Register routes
-    for route in urlpatterns:
+    # Register the routes in the Flask app
+    for route in routes:
         app.add_url_rule(
             route["path"], 
-            endpoint=route["name"], 
             view_func=route["view_func"], 
             methods=route["methods"]
         )

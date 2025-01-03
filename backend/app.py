@@ -1,18 +1,22 @@
-# backend/app.py
 from flask import Flask
 from flask_cors import CORS
+from dotenv import load_dotenv
+import os
 from urls import setup_routes
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app, supports_credentials=True)
+# Load environment variables from .env
+load_dotenv()
 
-    # Setup routes using your urlpatterns
-    setup_routes(app)
+# Allow insecure transport for development (ONLY FOR DEVELOPMENT)
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-    return app
+# Flask App Initialization
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+CORS(app, supports_credentials=True)
 
+# Register routes
+setup_routes(app)
 
 if __name__ == "__main__":
-    app = create_app()
     app.run(debug=True, port=5000)
