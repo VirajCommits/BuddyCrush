@@ -1,8 +1,9 @@
 from flask import redirect, request, jsonify, session
+from socketio_instance import socketio
+from flask_socketio import SocketIO, send, join_room, leave_room
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
-
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -19,78 +20,7 @@ users = {}
 
 groups = []
 
-# Auto-incrementing ID for new groups (for simplicity)
-next_group_id = len(groups) + 1
 
-def create_group():
-    global next_group_id
-
-    # Get the logged-in user
-    user = session.get("user")
-    if not user:
-        return jsonify({"error": "Not logged in"}), 401
-
-    user_email = user["email"]
-    user_name = user["name"]
-
-    # Get group details from request body
-    data = request.get_json()
-    group_name = data.get("name")
-    group_description = data.get("description")
-
-    user_picture = user["picture"]
-    # Validate input
-    if not group_name or not group_description:
-        return jsonify({"error": "Group name and description are required"}), 400
-
-    # Create the new group
-    new_group = {
-        "id": next_group_id,
-        "name": group_name,
-        "description": group_description,
-        "members": [{"name": user_name, "email": user_email , "picture": user_picture}],  # Add creator as the first member
-    }
-    groups.append(new_group)
-    next_group_id += 1
-
-    return jsonify({"message": f"Group '{group_name}' created successfully!", "group": new_group})
-
-
-def discover_groups():
-    # Get the logged-in user
-    user = session.get("user") 
-    if not user:
-        return jsonify({"error": "Not logged in"}), 401
-
-    # Filter groups if the user has already joined
-    available_groups = [
-        group for group in groups
-    ]
-
-    return jsonify({"groups": available_groups})
-
-def join_group(group_id):
-    # Get the logged-in user
-    user = session.get("user")
-    if not user:
-        return jsonify({"error": "Not logged in"}), 401
-
-    user_email = user["email"]
-    user_name = user["name"]
-    user_picture = user["picture"]
-
-    # Find the group by ID
-    group = next((group for group in groups if group["id"] == group_id), None)
-    if not group:
-        return jsonify({"error": "Group not found"}), 404
-
-    # Check if the user is already a member
-    if any(member["email"] == user_email for member in group["members"]):
-        return jsonify({"message": "You are already a member of this group"}), 400
-
-    # Add the user to the group's members list (name and email)
-    group["members"].append({"name": user_name, "email": user_email, "picture": user_picture})
-    return jsonify({"message": f"Joined group '{group['name']}' successfully!"})
 
 def get_google_provider_cfg():
     return {
@@ -173,3 +103,164 @@ def profile():
     if "user" in session:
         return jsonify({"user": session["user"]})
     return jsonify({"error": "Not logged in"}), 401
+
+
+# Auto-incrementing ID for new groups (for simplicity)
+next_group_id = len(groups) + 1
+
+def create_group():
+    global next_group_id
+
+    # Get the logged-in user
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    user_email = user["email"]
+    user_name = user["name"]
+
+    # Get group details from request body
+    data = request.get_json()
+    group_name = data.get("name")
+    group_description = data.get("description")
+
+    user_picture = user["picture"]
+    # Validate input
+    if not group_name or not group_description:
+        return jsonify({"error": "Group name and description are required"}), 400
+
+    # Create the new group
+    new_group = {
+        "id": next_group_id,
+        "name": group_name,
+        "description": group_description,
+        "members": [{"name": user_name, "email": user_email , "picture": user_picture}],  # Add creator as the first member
+    }
+    groups.append(new_group)
+    next_group_id += 1
+
+    return jsonify({"message": f"Group '{group_name}' created successfully!", "group": new_group})
+
+
+def discover_groups():
+    # Get the logged-in user
+    user = session.get("user") 
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    # Filter groups if the user has already joined
+    available_groups = [
+        group for group in groups
+    ]
+
+    return jsonify({"groups": available_groups})
+
+def join_group(group_id):
+    # Get the logged-in user
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    user_email = user["email"]
+    user_name = user["name"]
+    user_picture = user["picture"]
+
+    # Find the group by ID
+    group = next((group for group in groups if group["id"] == group_id), None)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Check if the user is already a member
+    if any(member["email"] == user_email for member in group["members"]):
+        return jsonify({"message": "You are already a member of this group"}), 400
+
+    # Add the user to the group's members list (name and email)
+    group["members"].append({"name": user_name, "email": user_email, "picture": user_picture})
+    return jsonify({"message": f"Joined group '{group['name']}' successfully!"})
+
+
+messages = {}  # Store messages for each group (group_id -> list of messages)
+
+
+# View Functions for REST APIs
+def get_messages(group_id):
+    if group_id not in messages:
+        return jsonify({"messages": []})
+    return jsonify({"messages": messages[group_id]})
+
+
+# Socket.IO Event Handlers
+@socketio.on("join_group")
+def handle_join_group(data):
+    group_id = data["group_id"]
+    user = session.get("user")
+    if not user:
+        send({"error": "Not logged in"}, to=request.sid)
+        return
+
+    user_name = user["name"]
+    join_room(group_id)
+    send({"message": f"{user_name} has joined the group!"}, room=group_id)
+
+
+@socketio.on("leave_group")
+def handle_leave_group(data):
+    group_id = data["group_id"]
+    user = session.get("user")
+    if not user:
+        send({"error": "Not logged in"}, to=request.sid)
+        return
+
+    user_name = user["name"]
+    leave_room(group_id)
+    send({"message": f"{user_name} has left the group!"}, room=group_id)
+
+
+@socketio.on("send_message")
+def handle_send_message(data):
+    group_id = data["group_id"]
+    message = data["message"]
+    user = session.get("user")
+    if not user:
+        send({"error": "Not logged in"}, to=request.sid)
+        return
+
+    user_name = user["name"]
+    if group_id not in messages:
+        messages[group_id] = []
+
+    # Add message to in-memory storage
+    messages[group_id].append({"user": user_name, "message": message})
+
+    # Broadcast the message to the group
+    send({"user": user_name, "message": message}, room=group_id)
+
+def send_message_to_group(group_id):
+    # Get the logged-in user
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    user_name = user["name"]
+
+    # Get the message from the request
+    data = request.get_json()
+    message = data.get("message")
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
+
+    # Check if the group exists
+    group = next((g for g in groups if g["id"] == group_id), None)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Store the message in memory
+    if group_id not in messages:
+        messages[group_id] = []
+    messages[group_id].append({"user": user_name, "message": message})
+
+    # Broadcast the message to the group (via WebSocket)
+    socketio.emit("group_message", {"user": user_name, "message": message}, room=group_id)
+
+    return jsonify({"message": "Message sent successfully!"})
+

@@ -1,4 +1,4 @@
-from views import discover_groups, join_group, create_group, google_login, google_callback, logout, profile
+from views import discover_groups,send_message_to_group, get_messages, join_group, create_group, google_login, google_callback, logout, profile
 
 def setup_routes(app):
     routes = [
@@ -9,6 +9,8 @@ def setup_routes(app):
         {"path": "/api/groups/discover", "view_func": discover_groups, "methods": ["GET"]},
         {"path": "/api/groups/<int:group_id>/join", "view_func": join_group, "methods": ["POST"]},
         {"path": "/api/groups/create", "view_func": create_group, "methods": ["POST"]},
+        {"path": "/api/groups/<int:group_id>/messages", "view_func": get_messages, "methods": ["GET"]},
+        {"path": "/api/groups/<int:group_id>/send-message", "view_func": send_message_to_group, "methods": ["POST"]},  # New route
     ]
 
     for route in routes:
