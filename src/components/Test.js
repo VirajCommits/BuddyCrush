@@ -8,7 +8,7 @@ export default function Test() {
   useEffect(() => {
     async function fetchMessage() {
       try {
-        const response = await fetch('http://127.0.0.1:5000/api/test'); // Flask endpoint
+        const response = await fetch('http://127.0.0.1:5000'); // Flask endpoint
         const data = await response.json();
         setMessage(data.message); // Update state with the response
       } catch (error) {
