@@ -30,9 +30,11 @@ export default function GroupChat({ groupId }) {
   }, [groupId]);
 
   const handleSendMessage = async () => {
+    console.log("SENDING MESSAGE!.....")
     if (newMessage.trim() === "") return;
     try {
-      await sendMessage(groupId, newMessage);
+      io.emit("send_message",newMessage)
+      console.log("SENT MESSAGE USING EMITS")
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
@@ -55,7 +57,7 @@ export default function GroupChat({ groupId }) {
         onChange={(e) => setNewMessage(e.target.value)}
         placeholder="Type your message"
       />
-      <button onClick={handleSendMessage}>Send</button>
+      <button onClick={handleSendMessage}>Send Viraj</button>
     </div>
   );
 }

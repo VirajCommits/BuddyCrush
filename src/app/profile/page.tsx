@@ -1,4 +1,3 @@
-// src/app/profile/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -15,7 +14,11 @@ type Group = {
   id: number;
   name: string;
   description: string;
-  members: any[]; // or define a proper type
+  members: {
+    email: string;
+    name: string;
+    picture: string;
+  }[];
 };
 
 export default function Profile() {
@@ -23,8 +26,8 @@ export default function Profile() {
   const [userGroups, setUserGroups] = useState<Group[]>([]);
   const [error, setError] = useState<string>("");
 
+  // 1) Fetch the user's profile
   useEffect(() => {
-    // 1) Fetch the user's profile
     axios
       .get("http://localhost:5000/api/profile", { withCredentials: true })
       .then((response) => {
@@ -35,17 +38,23 @@ export default function Profile() {
       });
   }, []);
 
-  // 2) Once the user is loaded, fetch the groups
+  // 2) Once we have the user, fetch ALL groups from /api/groups/discover,
+  // then filter by user membership
   useEffect(() => {
     if (!user) return;
 
     axios
-      .get("http://localhost:5000/api/profile/groups", { withCredentials: true })
+      .get("http://localhost:5000/api/groups/discover", { withCredentials: true })
       .then((res) => {
-        setUserGroups(res.data.groups || []);
+        const allGroups: Group[] = res.data.groups || [];
+        // Filter out the groups where this user's email is in the members
+        const joined = allGroups.filter((g) =>
+          g.members.some((m) => m.email === user.email)
+        );
+        setUserGroups(joined);
       })
       .catch((err) => {
-        console.error("Error fetching user groups:", err);
+        console.error("Error fetching groups:", err);
       });
   }, [user]);
 

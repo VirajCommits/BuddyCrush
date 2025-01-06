@@ -1,18 +1,8 @@
-// src/components/ProfilePage.tsx
-
 "use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
-/**
- * Example fetchGroups() helper. Adjust the import/path or write inline fetch.
- */
-// import { fetchGroups } from "../utils/api";
-
-/** 
- * Type definitions for user & group data
- */
 type User = {
   name: string;
   email: string;
@@ -26,13 +16,6 @@ type Group = {
   members: { email: string; name: string; picture: string }[];
 };
 
-/**
- * Our ProfilePage component does everything internally for demo:
- *  - Fetch user
- *  - Fetch groups
- *  - Determine membership
- *  - Render UI 
- */
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -45,7 +28,7 @@ export default function ProfilePage() {
       try {
         // 1) Fetch the logged-in user's profile
         const profileResponse = await fetch("http://localhost:5000/api/profile", {
-          credentials: "include", // include cookies/session
+          credentials: "include",
         });
         if (!profileResponse.ok) {
           throw new Error("Failed to fetch profile");
@@ -53,8 +36,7 @@ export default function ProfilePage() {
         const profileData = await profileResponse.json();
         setUser(profileData.user); // e.g. { name, email, picture }
 
-        // 2) Fetch all groups (Replace with your real fetch logic)
-        // For example, if you have a custom fetchGroups() helper, use that instead
+        // 2) Fetch all groups from /api/groups/discover
         const groupsRes = await fetch("http://localhost:5000/api/groups/discover", {
           credentials: "include",
         });
@@ -62,16 +44,17 @@ export default function ProfilePage() {
           throw new Error("Failed to fetch groups");
         }
         const groupsData = await groupsRes.json(); // e.g. { groups: [...] }
-        setGroups(groupsData.groups);
+        const allGroups: Group[] = groupsData.groups || [];
 
-        // 3) Determine joined groups
-        // Filter groups to find where the user is a member
+        // 3) Determine which groups the user has joined
         const userEmail = profileData.user.email;
-        const joined = groupsData.groups
-          .filter((g: Group) => g.members.some(m => m.email === userEmail))
-          .map((g: Group) => g.id);
+        console.log(allGroups , userEmail)
+        const joinedIds = allGroups
+          .filter((g) => g.members.some((m) => m.email === userEmail))
+          .map((g) => g.id);
 
-        setJoinedGroups(new Set(joined));
+        setGroups(allGroups);
+        setJoinedGroups(new Set(joinedIds));
       } catch (err: any) {
         console.error("Error fetching data:", err);
         setError(err.message || "Failed to fetch data.");
@@ -93,7 +76,6 @@ export default function ProfilePage() {
       if (!res.ok) {
         throw new Error("Logout failed");
       }
-      // Redirect to home page or login
       window.location.href = "/";
     } catch (err) {
       console.error(err);
@@ -112,6 +94,9 @@ export default function ProfilePage() {
   if (!user) {
     return <div style={styles.loading}>Loading profile...</div>;
   }
+
+  // Filter only the groups the user has joined
+  const joinedGroupsList = groups.filter((g) => isJoined(g.id));
 
   return (
     <div style={styles.pageWrapper}>
@@ -163,14 +148,14 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Display All Groups (with Joined/Not Joined) */}
+        {/* Display Only the Groups the User Joined */}
         <section style={styles.groupsSection}>
-          <h2 style={styles.subheading}>All Groups</h2>
-          {groups.length === 0 ? (
-            <p style={styles.noGroupsText}>No groups found.</p>
+          <h2 style={styles.subheading}>Your Joined Groups</h2>
+          {joinedGroupsList.length === 0 ? (
+            <p style={styles.noGroupsText}>You have not joined any groups.</p>
           ) : (
             <div style={styles.groupsGrid}>
-              {groups.map((group) => (
+              {joinedGroupsList.map((group) => (
                 <div key={group.id} style={styles.groupCard}>
                   <h3 style={styles.cardTitle}>{group.name}</h3>
                   <p style={styles.groupDesc}>{group.description}</p>
@@ -182,16 +167,10 @@ export default function ProfilePage() {
                       <h3>Click here to chat!</h3>
                     </div>
                   </Link>
-                  {isJoined(group.id) ? (
-                    <span style={styles.joinedTag}>Joined</span>
-                  ) : (
-                    <span style={styles.notJoinedTag}>Not Joined</span>
-                  )}
                 </div>
               ))}
             </div>
           )}
-
         </section>
       </div>
     </div>
@@ -280,7 +259,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: "pointer",
     fontWeight: "bold",
   },
-
   cardGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
@@ -315,7 +293,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: "inline-block",
     textAlign: "center",
   },
-
   groupsSection: {
     marginTop: "40px",
   },
@@ -348,20 +325,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#aaa",
     marginBottom: "10px",
   },
-  joinedTag: {
-    color: "limegreen",
-    fontWeight: "bold",
-    display: "inline-block",
-    border: "1px solid limegreen",
-    borderRadius: "4px",
-    padding: "3px 6px",
-  },
-  notJoinedTag: {
-    color: "#f44336",
-    fontWeight: "bold",
-    display: "inline-block",
-    border: "1px solid #f44336",
-    borderRadius: "4px",
-    padding: "3px 6px",
+  groupLink: {
+    textDecoration: "none",
+    color: "inherit",
   },
 };

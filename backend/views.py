@@ -2,7 +2,9 @@
 
 from flask import redirect, request, jsonify, session
 from flask_socketio import send, join_room, leave_room, emit
-from extensions import socketio  # Import the SocketIO instance
+from socketio_instance import socketio  # Import the SocketIO instance
+from models import Message
+from extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
@@ -49,7 +51,6 @@ def google_login():
     return redirect(request_uri)
 
 def google_callback():
-    print("CALLBACK INITIATING ......................")
     code = request.args.get("code")
 
     if not code:
@@ -88,7 +89,6 @@ def google_callback():
         users[email] = {"name": name, "email": email, "picture": picture}
 
     session["user"] = users[email]
-    print("Session contents at google_callback:", session)
 
     return redirect("http://localhost:3000/profile")
 
@@ -97,7 +97,6 @@ def logout():
     return jsonify({"message": "Logged out successfully"})
 
 def profile():
-    print("Session contents at profile:", session)
     user = session.get("user")
     if user:
         return jsonify({"user": user})
@@ -134,9 +133,7 @@ def create_group():
     return jsonify({"message": f"Group '{group_name}' created successfully!", "group": new_group})
 
 def discover_groups():
-    print("Session contents at discover_groups:", session)
     user = session.get("user")
-    print("This is the user: ", user)
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
@@ -145,7 +142,6 @@ def discover_groups():
     return jsonify({"groups": available_groups})
 
 def join_group(group_id):
-    print("Session contents at join_group:", session)
     user = session.get("user")
     if not user:
         return jsonify({"error": "Not logged in"}), 401
@@ -165,74 +161,136 @@ def join_group(group_id):
     return jsonify({"message": f"Joined group '{group['name']}' successfully!"})
 
 def send_message_to_group(group_id):
+    """
+    HTTP endpoint for sending a message to a group.
+    This also emits a real-time 'group_message' event 
+    so that connected Socket.IO clients update instantly.
+    """
     user = session.get("user")
+    user_picture = user["picture"]
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
-    user_name = user["name"]
-
+    group_id = int(group_id)  # ensure integer
     data = request.get_json()
-    message = data.get("message")
-    if not message:
+    content = data.get("message")
+    if not content:
         return jsonify({"error": "Message is required"}), 400
 
-    group = next((g for g in groups if g["id"] == group_id), None)
-    if not group:
-        return jsonify({"error": "Group not found"}), 404
+    # Save to DB
+    new_message = Message(
+        group_id=group_id, 
+        user_name=user["name"], 
+        content=content
+    )
+    db.session.add(new_message)
+    db.session.commit()
 
-    if group_id not in messages:
-        messages[group_id] = []
-    messages[group_id].append({"user": user_name, "message": message})
-
-    # Broadcast the message to the group via WebSocket
-    socketio.emit("group_message", {"user": user_name, "message": message}, room=group_id)
+    # Broadcast to all clients in the group room
+    socketio.emit(
+        "group_message", 
+        {"user": user["name"], "message": content , "picture":user_picture}, 
+        room=group_id
+    )
 
     return jsonify({"message": "Message sent successfully!"})
 
 def get_messages(group_id):
-    if group_id not in messages:
-        return jsonify({"messages": []})
-    return jsonify({"messages": messages[group_id]})
+    """
+    HTTP endpoint to fetch all messages for a group from the DB.
+    """
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
 
+    group_id = int(group_id)
+    group_msgs = Message.query \
+        .filter_by(group_id=group_id) \
+        .order_by(Message.created_at.asc()) \
+        .all()
+    
+    print("These are the group messages: " , group_msgs)
+
+    messages_data = [
+        {
+            "user": m.user_name, 
+            "message": m.content,
+            "created_at": m.created_at.isoformat()
+        }
+        for m in group_msgs
+    ]
+    return jsonify({"messages": messages_data})
+
+# ---------------------------
 # Socket.IO Event Handlers
+# ---------------------------
 
 @socketio.on("join_group")
 def handle_join_group(data):
-    group_id = data.get("group_id")
+    """
+    Socket.IO event to join a group room for real-time updates.
+    """
     user = session.get("user")
     if not user:
         emit("error", {"error": "Not logged in"})
         return
 
+    group_id = int(data.get("group_id"))  # consistent with integer usage
     user_name = user["name"]
+
     join_room(group_id)
-    emit("message", {"message": f"{user_name} has joined the group!"}, room=group_id)
+    emit("message", {
+        "message": f"{user_name} has joined group {group_id}!"
+    }, room=group_id)
 
 @socketio.on("leave_group")
 def handle_leave_group(data):
-    group_id = data.get("group_id")
+    """
+    Socket.IO event to leave a group room.
+    """
     user = session.get("user")
     if not user:
         emit("error", {"error": "Not logged in"})
         return
 
+    group_id = int(data.get("group_id"))
     user_name = user["name"]
+
     leave_room(group_id)
-    emit("message", {"message": f"{user_name} has left the group!"}, room=group_id)
+    emit("message", {
+        "message": f"{user_name} has left the group!"
+    }, room=group_id)
 
 @socketio.on("send_message")
 def handle_send_message(data):
-    group_id = data.get("group_id")
-    message = data.get("message")
+    """
+    Socket.IO event for directly sending a message via WebSocket.
+    Also saves to DB, then emits to the group room.
+    """
     user = session.get("user")
     if not user:
         emit("error", {"error": "Not logged in"})
         return
 
+    group_id = int(data.get("group_id"))
+    content = data.get("message")
+    if not content:
+        emit("error", {"error": "Message content is empty"})
+        return
+
     user_name = user["name"]
-    if group_id not in messages:
-        messages[group_id] = []
 
-    messages[group_id].append({"user": user_name, "message": message})
+    # Save to DB
+    new_message = Message(
+        group_id=group_id, 
+        user_name=user_name, 
+        content=content
+    )
+    db.session.add(new_message)
+    db.session.commit()
 
-    emit("group_message", {"user": user_name, "message": message}, room=group_id)
+    # Emit to the group
+    emit("group_message", {
+        "user": user_name, 
+        "message": content
+    }, room=group_id)
