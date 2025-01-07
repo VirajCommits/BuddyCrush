@@ -8,6 +8,7 @@ from extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
+from models import Group, User, UserActivity
 
 next_group_id = 1
 
@@ -127,19 +128,28 @@ def create_group():
         "description": group_description,
         "members": [{"name": user_name, "email": user_email, "picture": user_picture}],
     }
-    groups.append(new_group)
+    new_group = Group(name=group_name, description=group_description)
+    db.session.add(new_group)
+    db.session.commit()
+
     next_group_id += 1
 
     return jsonify({"message": f"Group '{group_name}' created successfully!", "group": new_group})
 
 def discover_groups():
+    # Check if the user is logged in
     user = session.get("user")
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
-    available_groups = [group for group in groups]
+    # Query all groups from the database
+    try:
+        available_groups = Group.query.all()
+        groups_data = [group.to_dict() for group in available_groups]  # Convert groups to dictionaries
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    return jsonify({"groups": available_groups})
+    return jsonify({"groups": groups_data})
 
 def join_group(group_id):
     user = session.get("user")
@@ -159,7 +169,60 @@ def join_group(group_id):
 
     group["members"].append({"name": user_name, "email": user_email, "picture": user_picture})
     return jsonify({"message": f"Joined group '{group['name']}' successfully!"})
+def complete_activity(group_id):
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
 
+    # Check if the group exists
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Add the completion record
+    user_email = user["email"]
+    completed_at = datetime.utcnow()
+
+    # Save the completion record
+    activity = UserActivity(user_email=user_email, group_id=group_id, completed_at=completed_at)
+    db.session.add(activity)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Activity recorded successfully",
+        "group_id": group_id,
+        "user_email": user_email,
+        "completed_at": completed_at.isoformat(),
+    })
+
+def get_leaderboard(group_id):
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    # Check if the group exists
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Fetch leaderboard data
+    leaderboard = db.session.query(
+        UserActivity.user_email,
+        db.func.count(UserActivity.id).label("completion_count"),
+        db.func.max(UserActivity.completed_at).label("last_completed"),
+    ).filter_by(group_id=group_id).group_by(UserActivity.user_email).order_by(db.desc("completion_count")).all()
+
+    # Format leaderboard data
+    leaderboard_data = [
+        {
+            "user_email": entry.user_email,
+            "completion_count": entry.completion_count,
+            "last_completed": entry.last_completed.isoformat(),
+        }
+        for entry in leaderboard
+    ]
+
+    return jsonify({"group_id": group_id, "leaderboard": leaderboard_data})
 def send_message_to_group(group_id):
     """
     HTTP endpoint for sending a message to a group.

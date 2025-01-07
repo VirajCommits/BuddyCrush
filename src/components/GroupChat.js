@@ -34,7 +34,6 @@ export default function GroupChat({ groupId }) {
     if (newMessage.trim() === "") return;
     try {
       io.emit("send_message",newMessage)
-      console.log("SENT MESSAGE USING EMITS")
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-// If you prefer inline styles instead of CSS modules:
+
 const formStyles = {
   container: {
     padding: "20px",
@@ -35,9 +35,32 @@ export default function CreateGroup({ onCreate }) {
   const handleCreate = async () => {
     try {
       const newGroup = { name, description };
-      await onCreate(newGroup); // The parent page or context handles the actual create logic
+      console.log("This is the body of the group i wanna create:" , newGroup)
+      const response = await fetch("http://localhost:5000/api/groups/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newGroup),
+      });
+
+      console.log("This is the response:" , response)
+
+      if (!response.ok) {
+        throw new Error("Failed to create group");
+      }
+
+      const createdGroup = await response.json();
+      console.log("Group created:", createdGroup);
+
+      // Clear the form fields
       setName("");
       setDescription("");
+
+      // Optionally update parent or state
+      if (onCreate) {
+        onCreate(createdGroup);
+      }
     } catch (error) {
       console.error("Error creating group:", error);
       alert("Failed to create group.");
@@ -51,7 +74,6 @@ export default function CreateGroup({ onCreate }) {
         style={formStyles.input}
         type="text"
         placeholder="Work out 🏋️‍♀️, Read 📚, Sleep early 🛌"
-      
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
