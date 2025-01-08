@@ -330,7 +330,8 @@ def get_group_activity(group_id):
         db.session.query(
             UserActivity.completed_date,
             User.name.label("user_name"),
-            User.picture.label("user_picture")
+            User.picture.label("user_picture"),
+            User.email.label("user_email")
         )
         .join(User, UserActivity.user_id == User.id)
         .filter(UserActivity.group_id == group_id)
@@ -343,9 +344,11 @@ def get_group_activity(group_id):
     data = []
     today = date.today()
     for record in activity_list:
+        print(")))))))))))))))))))))" , record)
         days_ago = (today - record.completed_date).days
         data.append({
             "user_name": record.user_name,
+            "user_email": record.user_email,
             "user_picture": record.user_picture,
             "completed_date": record.completed_date.isoformat(),
             "days_ago": days_ago

@@ -1,8 +1,8 @@
 """Add memberships relationship to User model
 
-Revision ID: 95d6db9d4a05
+Revision ID: c21f28a33367
 Revises: 
-Create Date: 2025-01-06 23:24:18.959646
+Create Date: 2025-01-08 12:51:44.050524
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '95d6db9d4a05'
+revision = 'c21f28a33367'
 down_revision = None
 branch_labels = None
 depends_on = None

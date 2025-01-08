@@ -5,10 +5,12 @@
 import React, { useState, useEffect } from "react";
 import Leaderboard from "./Leaderboard";
 import ActivityFeed from "./ActivityFeed";
+import Link from "next/link";
 import {
   completeDailyTask,
   fetchActivityFeed,
   fetchLeaderboard,
+  fetchProfile,
 } from "../utils/api";
 
 export default function GroupCard({ group }) {
@@ -24,10 +26,17 @@ export default function GroupCard({ group }) {
     const checkCompletion = async () => {
       try {
         const response = await fetchActivityFeed(group.id);
+        const cur_user = (await fetchProfile()).data.user;
+        console.log(cur_user)
         const today = new Date().toISOString().split("T")[0];
+        console.log("This is today:" , today)
         const hasCompletedToday = response.data.activity.some(
-          (item) => item.completed_date === today
+          (item) => {
+            console.log("This is the item:", item, cur_user.email);
+            return item.completed_date === today && item.user_email === cur_user.email;
+          } 
         );
+        
         setAlreadyCompleted(hasCompletedToday);
         setActivityData(response.data.activity);
       } catch (err) {
@@ -176,6 +185,11 @@ export default function GroupCard({ group }) {
           ? "Completing..."
           : "Complete Habit"}
       </button>
+      <Link key={group.id} href={`/group/${group.id}`} style={styles.groupLink}>
+                    <div style={styles.groupCard}>
+                      <h3>Click here to chat!</h3>
+                    </div>
+                  </Link>
     </div>
   );
 }
@@ -225,6 +239,10 @@ const styles = {
     padding: "10px",
     backgroundColor: "#2c2c2c",
     borderRadius: "5px",
+  },
+  groupLink: {
+    textDecoration: "none",
+    color: "inherit",
   },
   description: {
     marginBottom: "10px",
