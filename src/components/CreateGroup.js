@@ -1,6 +1,8 @@
+// src/components/CreateGroup.js
+
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 
 const formStyles = {
   container: {
@@ -31,39 +33,33 @@ const formStyles = {
 export default function CreateGroup({ onCreate }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreate = async () => {
+    if (isSubmitting) return; // Prevent multiple submissions
+
+    // Basic validation
+    if (!name.trim() || !description.trim()) {
+      alert("Please provide both name and description.");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      const newGroup = { name, description };
-      console.log("This is the body of the group i wanna create:" , newGroup)
-      const response = await fetch("http://localhost:5000/api/groups/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newGroup),
-      });
+      const newGroup = { name: name.trim(), description: description.trim() };
+      console.log("Group data to be sent to parent:", newGroup);
 
-      console.log("This is the response:" , response)
+      // Pass the data to the parent component
+      onCreate(newGroup);
 
-      if (!response.ok) {
-        throw new Error("Failed to create group");
-      }
-
-      const createdGroup = await response.json();
-      console.log("Group created:", createdGroup);
-
-      // Clear the form fields
+      // Clear the form fields after submission
       setName("");
       setDescription("");
-
-      // Optionally update parent or state
-      if (onCreate) {
-        onCreate(createdGroup);
-      }
     } catch (error) {
-      console.error("Error creating group:", error);
+      console.error("Error in CreateGroup component:", error);
       alert("Failed to create group.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -76,15 +72,21 @@ export default function CreateGroup({ onCreate }) {
         placeholder="Work out 🏋️‍♀️, Read 📚, Sleep early 🛌"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        disabled={isSubmitting}
       />
       <textarea
         style={formStyles.input}
         placeholder="What would people gain by joining your group? What should they do?"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
+        disabled={isSubmitting}
       />
-      <button style={formStyles.button} onClick={handleCreate}>
-        Create Group
+      <button
+        style={formStyles.button}
+        onClick={handleCreate}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Creating..." : "Create Group"}
       </button>
     </div>
   );

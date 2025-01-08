@@ -28,10 +28,11 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     picture = db.Column(db.String(255), nullable=True)
+    memberships = db.relationship("GroupMember", back_populates="user", cascade="all, delete-orphan")
+
 class Group(db.Model):
     __tablename__ = "group"
-
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
 
@@ -42,7 +43,15 @@ class Group(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "description": self.description
+            "description": self.description,
+            "members": [
+                {
+                    "id": member.user.id,
+                    "name": member.user.name,
+                    "email": member.user.email
+                }
+                for member in self.members
+            ]
         }
 
 class GroupMember(db.Model):
@@ -62,7 +71,6 @@ class GroupMember(db.Model):
             "user_id": self.user_id,
             "group_id": self.group_id
         }
-
 class UserActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -71,4 +79,6 @@ class UserActivity(db.Model):
 
     user = db.relationship('User', backref='activities', lazy=True)
     group = db.relationship('Group', backref='activities', lazy=True)
+
+
 

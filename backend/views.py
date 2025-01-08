@@ -8,7 +8,9 @@ from extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
-from models import Group, User, UserActivity
+from models import Group,GroupMember, User, UserActivity
+from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime, date
 
 next_group_id = 1
 
@@ -89,7 +91,20 @@ def google_callback():
     if email not in users:
         users[email] = {"name": name, "email": email, "picture": picture}
 
+    user = User.query.filter_by(email=user_info["email"]).first()
+    if not user:
+        # If user doesn't exist, create a new user
+        user = User(
+            name=user_info["name"],
+            email=user_info["email"],
+            picture=user_info["picture"]
+        )
+        db.session.add(user)
+        db.session.commit()
+
+
     session["user"] = users[email]
+    print("This is the session:" , session)
 
     return redirect("http://localhost:3000/profile")
 
@@ -107,6 +122,7 @@ def create_group():
     global next_group_id
 
     user = session.get("user")
+    print("This is the user --------------- :" , user , user["picture"])
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
@@ -114,27 +130,43 @@ def create_group():
     user_name = user["name"]
 
     data = request.get_json()
-    group_name = data.get("name")
-    group_description = data.get("description")
+    print("This is the data i get:" , data)
+    if "group" in data:
+        group_name = data["group"].get("name")
+        group_description = data["group"].get("description")
+    else:
+
+        group_name = data.get("name")
+        group_description = data.get("description")
+
+    print("And this is the group name and desc:" , group_name , group_description)
 
     user_picture = user["picture"]
 
     if not group_name or not group_description:
         return jsonify({"error": "Group name and description are required"}), 400
-
-    new_group = {
-        "id": next_group_id,
-        "name": group_name,
-        "description": group_description,
-        "members": [{"name": user_name, "email": user_email, "picture": user_picture}],
-    }
+    # Create the group
     new_group = Group(name=group_name, description=group_description)
     db.session.add(new_group)
+    db.session.flush()  # Flush to get the group ID
+
+    # Find the user in the database
+    user_obj = User.query.filter_by(email=user_email).first()
+    if not user_obj:
+        return jsonify({"error": "User not found"}), 404
+
+    # Create a GroupMember entry
+    group_member = GroupMember(user_id=user_obj.id, group_id=new_group.id)
+    db.session.add(group_member)
+
+    # Commit all changes
     db.session.commit()
 
-    next_group_id += 1
 
-    return jsonify({"message": f"Group '{group_name}' created successfully!", "group": new_group})
+    return jsonify({
+        "message": f"Group '{group_name}' created successfully!",
+        "group": new_group.to_dict()
+    })
 
 def discover_groups():
     # Check if the user is logged in
@@ -144,7 +176,9 @@ def discover_groups():
 
     # Query all groups from the database
     try:
+        print("Right here!...")
         available_groups = Group.query.all()
+        print("These are the available groups:" , available_groups)
         groups_data = [group.to_dict() for group in available_groups]  # Convert groups to dictionaries
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -152,77 +186,173 @@ def discover_groups():
     return jsonify({"groups": groups_data})
 
 def join_group(group_id):
-    user = session.get("user")
-    if not user:
+    # 1. Retrieve user information from session
+    user_info = session.get("user")
+    if not user_info:
         return jsonify({"error": "Not logged in"}), 401
 
-    user_email = user["email"]
-    user_name = user["name"]
-    user_picture = user["picture"]
+    user_email = user_info.get("email")
+    if not user_email:
+        return jsonify({"error": "Invalid user session"}), 400
 
-    group = next((group for group in groups if group["id"] == group_id), None)
-    if not group:
-        return jsonify({"error": "Group not found"}), 404
+    try:
+        # 2. Fetch the user from the database
+        user = User.query.filter_by(email=user_email).first()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-    if any(member["email"] == user_email for member in group["members"]):
-        return jsonify({"message": "You are already a member of this group"}), 400
+        # 3. Fetch the group from the database
+        group = Group.query.get(group_id)
+        if not group:
+            return jsonify({"error": "Group not found"}), 404
 
-    group["members"].append({"name": user_name, "email": user_email, "picture": user_picture})
-    return jsonify({"message": f"Joined group '{group['name']}' successfully!"})
+        # 4. Check if the user is already a member of the group
+        existing_membership = GroupMember.query.filter_by(user_id=user.id, group_id=group.id).first()
+        if existing_membership:
+            return jsonify({"message": "You are already a member of this group."}), 400
+
+        # 5. Create a new GroupMember entry
+        new_membership = GroupMember(user_id=user.id, group_id=group.id)
+        db.session.add(new_membership)
+
+        # 6. Commit the transaction
+        db.session.commit()
+
+        # 7. Optional: Refresh the group to include the new member
+        db.session.refresh(group)
+
+        return jsonify({"message": f"Joined group '{group.name}' successfully!"}), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        # Log the error as needed
+        print(f"Database error: {e}")
+        return jsonify({"error": "An error occurred while joining the group."}), 500
+
+    except Exception as e:
+        # Log the error as needed
+        print(f"Unexpected error: {e}")
+        return jsonify({"error": "An unexpected error occurred."}), 500
 def complete_activity(group_id):
     user = session.get("user")
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
-    # Check if the group exists
     group = Group.query.get(group_id)
     if not group:
         return jsonify({"error": "Group not found"}), 404
 
-    # Add the completion record
+    # 1) Get the user from the database
     user_email = user["email"]
-    completed_at = datetime.utcnow()
+    user_obj = User.query.filter_by(email=user_email).first()
+    if not user_obj:
+        return jsonify({"error": "User not found"}), 404
 
-    # Save the completion record
-    activity = UserActivity(user_email=user_email, group_id=group_id, completed_at=completed_at)
+    # 2) Check if user has completed this group’s habit today
+    today = date.today()
+    existing_record = UserActivity.query.filter_by(
+        user_id=user_obj.id,
+        group_id=group_id,
+        completed_date=today
+    ).first()
+
+    if existing_record:
+        return jsonify({"error": "Already completed today"}), 400
+
+    # 3) Otherwise create a new record
+    activity = UserActivity(
+        user_id=user_obj.id,
+        group_id=group_id,
+        completed_date=today
+    )
     db.session.add(activity)
     db.session.commit()
 
     return jsonify({
-        "message": "Activity recorded successfully",
+        "message": f"Activity recorded successfully for {group.name}",
         "group_id": group_id,
         "user_email": user_email,
-        "completed_at": completed_at.isoformat(),
+        "completed_date": today.isoformat(),
     })
-
 def get_leaderboard(group_id):
     user = session.get("user")
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
-    # Check if the group exists
     group = Group.query.get(group_id)
     if not group:
         return jsonify({"error": "Group not found"}), 404
 
-    # Fetch leaderboard data
-    leaderboard = db.session.query(
-        UserActivity.user_email,
-        db.func.count(UserActivity.id).label("completion_count"),
-        db.func.max(UserActivity.completed_at).label("last_completed"),
-    ).filter_by(group_id=group_id).group_by(UserActivity.user_email).order_by(db.desc("completion_count")).all()
+    # Using a join to get user info
+    from sqlalchemy import func
+    leaderboard = (
+        db.session.query(
+            User.id.label("user_id"),
+            User.name.label("user_name"),
+            User.picture.label("user_picture"),
+            func.count(UserActivity.id).label("completion_count"),
+            func.max(UserActivity.completed_date).label("last_completed")
+        )
+        .join(UserActivity, User.id == UserActivity.user_id)
+        .filter(UserActivity.group_id == group_id)
+        .group_by(User.id)
+        .order_by(func.count(UserActivity.id).desc())  # sort by completion_count desc
+        .all()
+    )
 
     # Format leaderboard data
-    leaderboard_data = [
-        {
-            "user_email": entry.user_email,
-            "completion_count": entry.completion_count,
-            "last_completed": entry.last_completed.isoformat(),
-        }
-        for entry in leaderboard
-    ]
+    leaderboard_data = []
+    for entry in leaderboard:
+        leaderboard_data.append({
+            "user_id": entry.user_id,
+            "user_name": entry.user_name,
+            "user_picture": entry.user_picture,
+            "completion_count": int(entry.completion_count),
+            "last_completed": entry.last_completed.isoformat() if entry.last_completed else None
+        })
 
-    return jsonify({"group_id": group_id, "leaderboard": leaderboard_data})
+    return jsonify({
+        "group_id": group_id,
+        "leaderboard": leaderboard_data
+    })
+def get_group_activity(group_id):
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Join to get user info
+    from sqlalchemy import desc
+    activity_list = (
+        db.session.query(
+            UserActivity.completed_date,
+            User.name.label("user_name"),
+            User.picture.label("user_picture")
+        )
+        .join(User, UserActivity.user_id == User.id)
+        .filter(UserActivity.group_id == group_id)
+        .order_by(desc(UserActivity.completed_date))
+        .limit(10)  # last 10
+        .all()
+    )
+
+    # Format
+    data = []
+    today = date.today()
+    for record in activity_list:
+        days_ago = (today - record.completed_date).days
+        data.append({
+            "user_name": record.user_name,
+            "user_picture": record.user_picture,
+            "completed_date": record.completed_date.isoformat(),
+            "days_ago": days_ago
+        })
+
+    return jsonify({"activity": data})
+
 def send_message_to_group(group_id):
     """
     HTTP endpoint for sending a message to a group.

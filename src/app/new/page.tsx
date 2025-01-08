@@ -1,43 +1,51 @@
 // src/app/new/page.tsx
+
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import CreateGroup from "../../components/CreateGroup";
 import axios from "axios";
 
 export default function NewGroupPage() {
-  // This function is called when the user clicks “Create Group”
+  const [isCreating, setIsCreating] = useState(false);
+
   const handleCreateGroup = async (newGroupData: { name: string; description: string }) => {
+    if (isCreating) return;
+
+    setIsCreating(true);
+    console.log("handleCreateGroup called with:", newGroupData);
     try {
-      // Example: POST to your backend
-      // Adjust the endpoint as needed
       const response = await axios.post(
         "http://localhost:5000/api/groups/create",
         newGroupData,
-        { withCredentials: true } // ensures cookies are sent
+        { withCredentials: true }
       );
       alert(response.data.message || "Group created successfully!");
     } catch (error) {
       console.error("Error creating group:", error);
-      alert("Failed to create group.");
+      if (axios.isAxiosError(error) && error.response?.data?.error) {
+        alert(`Failed to create group: ${error.response.data.error}`);
+      } else {
+        alert("Failed to create group.");
+      }
+    } finally {
+      setIsCreating(false);
     }
   };
 
   return (
     <div style={styles.pageContainer}>
-      {/* A simple "Back" link (optional) */}
-      <button style={styles.backButton} onClick={() => history.back()}>
+      <button style={styles.backButton} onClick={() => window.history.back()}>
         &lt; BACK
       </button>
 
-      <h1 style={styles.pageHeading}>Your new accountability group</h1>
+      <h1 style={styles.pageHeading}>Your New Accountability Group</h1>
 
       <CreateGroup onCreate={handleCreateGroup} />
     </div>
   );
 }
 
-// Inline styles for the page
 const styles: { [key: string]: React.CSSProperties } = {
   pageContainer: {
     maxWidth: "800px",

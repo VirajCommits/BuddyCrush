@@ -10,6 +10,7 @@ from views import (
     google_callback,
     logout,
     complete_activity,
+    get_group_activity,
     get_leaderboard,
     profile
 )
@@ -27,6 +28,7 @@ def setup_routes(app):
         {"path": "/api/groups/<int:group_id>/send-message", "view_func": send_message_to_group, "methods": ["POST"]},
         {"path": "/api/groups/<int:group_id>/complete", "view_func": complete_activity, "methods": ["POST"]},
         {"path": "/api/groups/<int:group_id>/leaderboard", "view_func": get_leaderboard, "methods": ["GET"]},
+        {"path": "/api/groups/<int:group_id>/activity", "view_func": get_group_activity, "methods": ["GET"]},
     ]
 
     for route in routes:
