@@ -1,33 +1,28 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import io, { Socket } from "socket.io-client";
+import socket from "../../../utils/socket"; // Singleton socket instance
 
 /** Type for messages in chat */
 type Message = {
-  user: string;      // e.g. user email or user ID
+  user: string; // e.g. user email or user ID
   message: string;
-  picture: string;   // the avatar URL
+  picture: string; // the avatar URL
 };
-
-let socket: Socket | null = null;
 
 export default function GroupChatPage() {
   const params = useParams();
-  const groupId = params.groupId; // e.g. "1"
+  const groupId = params.groupId; // e.g., "1"
 
-  // We'll fetch the current user from /api/profile
-  // and set 'currentUserEmail' from that data.
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [groupName, setGroupName] = useState(`Group #${groupId}`);
   const [error, setError] = useState("");
 
-  // 1) On initial mount, fetch the user profile and connect to Socket.IO
+  /** Fetch user profile */
   useEffect(() => {
-    // A function to fetch the logged-in user's profile
     const fetchUserProfile = async () => {
       try {
         const res = await fetch("http://localhost:5000/api/profile", {
@@ -37,41 +32,34 @@ export default function GroupChatPage() {
           throw new Error("Failed to fetch user profile");
         }
         const data = await res.json();
-        // data => { user: { email, name, picture } }
         setCurrentUserEmail(data.user.name);
       } catch (err: any) {
-        console.error(err);
+        console.error("Error fetching user profile:", err);
         setError(err.message || "Error fetching user profile");
       }
     };
 
-    // Connect to the Socket.IO server & join group
-    const initSocket = () => {
-      socket = io("http://localhost:5000", {
-        withCredentials: true,
-      });
+    fetchUserProfile();
+  }, []);
 
-      // Join the group room
-      socket.emit("join_group", { group_id: groupId });
-
-      // Listen for group_message broadcasts
-      socket.on("group_message", (data: Message) => {
-        setMessages((prev) => [...prev, data]);
-      });
+  /** Initialize socket and manage listeners */
+  useEffect(() => {
+    const handleIncomingMessage = (data: Message) => {
+      setMessages((prev) => [...prev, data]);
     };
 
-    fetchUserProfile().then(() => {
-      initSocket();
-    });
+    // Join the group and listen for messages
+    socket.emit("join_group", { group_id: groupId });
+    socket.on("group_message", handleIncomingMessage);
 
     // Cleanup on unmount
     return () => {
-      socket?.disconnect();
-      socket = null;
+      socket.emit("leave_group", { group_id: groupId });
+      socket.off("group_message", handleIncomingMessage);
     };
   }, [groupId]);
 
-  // 2) Fetch existing messages for initial load
+  /** Fetch existing messages on initial load */
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -82,18 +70,17 @@ export default function GroupChatPage() {
           throw new Error("Failed to fetch group messages");
         }
         const data = await res.json();
-        // data.messages => [{ user, message, picture, ... }, ...]
         setMessages(data.messages || []);
       } catch (err: any) {
-        console.error(err);
-        setError(err.message || "An error occurred fetching messages.");
+        console.error("Error fetching messages:", err);
+        setError(err.message || "Error fetching group messages");
       }
     };
 
     fetchMessages();
   }, [groupId]);
 
-  // 3) Send a new message via POST
+  /** Send a new message */
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
@@ -108,18 +95,17 @@ export default function GroupChatPage() {
         throw new Error("Failed to send message");
       }
       setNewMessage("");
-    } catch (err) {
-      console.error(err);
-      alert("Error sending message. See console for details.");
+    } catch (err: any) {
+      console.error("Error sending message:", err);
+      setError("Error sending message. Try again.");
     }
   };
 
-  // 4) If there's an error, show it
+  /** Render the component */
   if (error) {
     return <div style={styles.error}>Error: {error}</div>;
   }
 
-  // 5) Render the chat UI
   return (
     <div style={styles.page}>
       <header style={styles.header}>
@@ -129,9 +115,8 @@ export default function GroupChatPage() {
       <div style={styles.chatContainer}>
         <div style={styles.messagesBox}>
           {messages.map((msg, index) => {
-            // If msg.user matches the current user's email, it's your message
+            console.log(">>>>" , msg.user , msg , currentUserEmail)
             const isMine = msg.user === currentUserEmail;
-
 
             return (
               <div key={index} style={isMine ? styles.rowRight : styles.rowLeft}>
