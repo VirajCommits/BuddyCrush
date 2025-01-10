@@ -1,27 +1,31 @@
-// components/ActivityFeed.js
-
 import React from "react";
 
-export default function ActivityFeed({ activity }) {
-  if (activity.length === 0) {
+export default function ActivityFeed({ activity = [] }) {
+  if (!Array.isArray(activity) || activity.length === 0) {
     return <p style={styles.noData}>No recent activity.</p>;
   }
 
   return (
     <div style={styles.container}>
-      <h3>Recent Activity</h3>
       <ul style={styles.list}>
         {activity.map((item, index) => (
           <li key={index} style={styles.listItem}>
+            {/* Avatar */}
             <img
               src={item.user_picture}
               alt={item.user_name}
               style={styles.avatar}
             />
-            <span style={styles.userName}>{item.user_name}</span>
-            <span style={styles.completed}>
-              Completed {item.days_ago > 0 ? `${item.days_ago} day(s) ago` : "today"}
-            </span>
+            {/* User Info */}
+            <div style={styles.userInfo}>
+              <span style={styles.userName}>{item.user_name}</span>
+              <span style={styles.completed}>
+                Completed{" "}
+                {item.days_ago > 0
+                  ? `${item.days_ago} day(s) ago`
+                  : "today"}
+              </span>
+            </div>
           </li>
         ))}
       </ul>
@@ -31,33 +35,44 @@ export default function ActivityFeed({ activity }) {
 
 const styles = {
   container: {
-    padding: "10px",
+    borderRadius: "8px",
+    maxWidth: "1000px",
+    margin: "20px auto",
   },
   noData: {
-    color: "#ccc",
+    color: "#ddd",
+    textAlign: "center",
+    fontSize: "14px",
   },
   list: {
     listStyleType: "none",
-    paddingLeft: "0",
+    padding: "0",
+    margin: "0",
   },
   listItem: {
     display: "flex",
     alignItems: "center",
-    marginBottom: "8px",
+    padding: "10px",
   },
   avatar: {
-    width: "30px",
-    height: "30px",
+    width: "40px",
+    height: "40px",
     borderRadius: "50%",
     marginRight: "10px",
-    objectFit: "cover",
+    objectFit: "cover", // Ensure the image fits within the avatar
+  },
+  userInfo: {
+    display: "flex",
+    flexDirection: "column",
   },
   userName: {
-    flex: 1,
+    fontWeight: "600",
+    fontSize: "14px",
     color: "#fff",
+    marginBottom: "3px", // Added spacing between name and time
   },
   completed: {
-    fontWeight: "bold",
-    color: "#fff",
+    fontSize: "12px",
+    color: "#aaa",
   },
 };

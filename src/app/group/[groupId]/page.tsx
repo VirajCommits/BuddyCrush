@@ -4,24 +4,23 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import socket from "../../../utils/socket"; // Singleton socket instance
 
-/** Type for messages in chat */
 type Message = {
-  user: string; // e.g. user email or user ID
+  user: string; 
   message: string;
-  picture: string; // the avatar URL
+  picture: string;
 };
 
 export default function GroupChatPage() {
   const params = useParams();
-  const groupId = params.groupId; // e.g., "1"
+  const groupId = params.groupId; 
 
-  const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const [currentUserName, setcurrentUserName] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [groupName, setGroupName] = useState(`Group #${groupId}`);
   const [error, setError] = useState("");
 
-  /** Fetch user profile */
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -32,7 +31,7 @@ export default function GroupChatPage() {
           throw new Error("Failed to fetch user profile");
         }
         const data = await res.json();
-        setCurrentUserEmail(data.user.name);
+        setcurrentUserName(data.user.name);
       } catch (err: any) {
         console.error("Error fetching user profile:", err);
         setError(err.message || "Error fetching user profile");
@@ -42,24 +41,20 @@ export default function GroupChatPage() {
     fetchUserProfile();
   }, []);
 
-  /** Initialize socket and manage listeners */
   useEffect(() => {
     const handleIncomingMessage = (data: Message) => {
       setMessages((prev) => [...prev, data]);
     };
 
-    // Join the group and listen for messages
     socket.emit("join_group", { group_id: groupId });
     socket.on("group_message", handleIncomingMessage);
 
-    // Cleanup on unmount
     return () => {
       socket.emit("leave_group", { group_id: groupId });
       socket.off("group_message", handleIncomingMessage);
     };
   }, [groupId]);
 
-  /** Fetch existing messages on initial load */
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -70,6 +65,7 @@ export default function GroupChatPage() {
           throw new Error("Failed to fetch group messages");
         }
         const data = await res.json();
+        console.log(data.messages)
         setMessages(data.messages || []);
       } catch (err: any) {
         console.error("Error fetching messages:", err);
@@ -80,7 +76,6 @@ export default function GroupChatPage() {
     fetchMessages();
   }, [groupId]);
 
-  /** Send a new message */
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
@@ -101,27 +96,26 @@ export default function GroupChatPage() {
     }
   };
 
-  /** Render the component */
   if (error) {
     return <div style={styles.error}>Error: {error}</div>;
   }
 
   return (
     <div style={styles.page}>
-      <header style={styles.header}>
-        <h2 style={styles.groupName}>{groupName}</h2>
-      </header>
 
       <div style={styles.chatContainer}>
         <div style={styles.messagesBox}>
           {messages.map((msg, index) => {
-            console.log(">>>>" , msg.user , msg , currentUserEmail)
-            const isMine = msg.user === currentUserEmail;
+            const isMine = msg.user === currentUserName;
 
             return (
               <div key={index} style={isMine ? styles.rowRight : styles.rowLeft}>
                 {!isMine && (
-                  <img src={msg.picture} alt="Avatar" style={styles.avatarLeft} />
+                  <img
+                  src={msg.user_image}
+                  alt="Avatar"
+                  style={isMine ? styles.avatarRight : styles.avatarLeft}
+                />
                 )}
 
                 <div style={isMine ? styles.bubbleRight : styles.bubbleLeft}>
@@ -129,7 +123,11 @@ export default function GroupChatPage() {
                 </div>
 
                 {isMine && (
-                  <img src={msg.picture} alt="My Avatar" style={styles.avatarRight} />
+                  <img
+                  src={msg.user_image || "https://imgs.search.brave.com/liVtoLQ1_sNYI7Hysr17zleeDN-50DQTD93nqhHCfiE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTMz/MjEwMDkxOS92ZWN0/b3IvbWFuLWljb24t/YmxhY2staWNvbi1w/ZXJzb24tc3ltYm9s/LmpwZz9zPTYxMng2/MTImdz0wJms9MjAm/Yz1BVlZKa3Z4UVFD/dUJoYXdIclVoRFJU/Q2VOUTNKZ3QwSzF0/WGpKc0Z5MWVnPQ"}
+                  alt="Avatar"
+                  style={isMine ? styles.avatarRight : styles.avatarLeft}
+                />
                 )}
               </div>
             );
@@ -153,105 +151,115 @@ export default function GroupChatPage() {
   );
 }
 
-/** Inline styling for left/right alignment */
 const styles: { [key: string]: React.CSSProperties } = {
-  error: {
-    color: "red",
-    margin: "40px auto",
-    textAlign: "center",
-  },
   page: {
-    minHeight: "100vh",
-    backgroundColor: "#121212",
-    color: "#fff",
+    height: "100vh", // Full screen height
     display: "flex",
     flexDirection: "column",
-    fontFamily: "sans-serif",
+    backgroundColor: "#1e1e2f", // Aesthetic blueish-purple background
+    color: "#fff",
+    fontFamily: "Arial, sans-serif",
   },
   header: {
-    backgroundColor: "#360929",
-    padding: "10px 20px",
+    padding: "20px",
+    backgroundColor: "#2a2a3b", // Slightly darker for contrast
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    color: "#fff",
+    boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
   },
   groupName: {
     margin: 0,
-    fontSize: "1.5rem",
+    fontSize: "1.8rem",
+    fontWeight: "bold",
   },
   chatContainer: {
     flex: 1,
-    maxWidth: "800px",
-    margin: "30px auto",
     display: "flex",
     flexDirection: "column",
-    borderRadius: "10px",
-    backgroundColor: "#1c1c1c",
-    padding: "20px",
-    boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+    justifyContent: "space-between",
+    padding: "10px 20px",
   },
   messagesBox: {
     flex: 1,
-    overflowY: "auto",
+    overflowY: "scroll", // Enable scrolling
     marginBottom: "20px",
-    paddingRight: "10px",
+    padding: "10px 10px",
+    backgroundColor: "#2a2a3b",
+    borderRadius: "8px",
+    boxShadow: "inset 0 2px 5px rgba(0,0,0,0.1)",
   },
-  // Align messages on the left
   rowLeft: {
     display: "flex",
     alignItems: "center",
-    marginBottom: "8px",
+    marginBottom: "10px",
   },
   avatarLeft: {
-    width: "30px",
-    height: "30px",
+    width: "40px",
+    height: "40px",
     borderRadius: "50%",
-    marginRight: "8px",
+    marginRight: "10px",
     objectFit: "cover",
+    border: "2px solid #007bff",
   },
   bubbleLeft: {
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "#2e3a4b",
     padding: "10px 15px",
-    borderRadius: "10px",
-    maxWidth: "60%",
+    borderRadius: "15px 15px 15px 0",
+    maxWidth: "70%",
+    color: "#fff",
+    fontSize: "14px",
   },
-  // Align messages on the right
   rowRight: {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
-    marginBottom: "8px",
+    marginBottom: "10px",
   },
   avatarRight: {
-    width: "30px",
-    height: "30px",
+    width: "40px",
+    height: "40px",
     borderRadius: "50%",
-    marginLeft: "8px",
+    marginLeft: "10px",
     objectFit: "cover",
+    border: "2px solid #2a2a3b",
   },
   bubbleRight: {
     backgroundColor: "#007bff",
     padding: "10px 15px",
-    borderRadius: "10px",
-    maxWidth: "60%",
+    borderRadius: "15px 15px 0 15px",
+    maxWidth: "70%",
+    color: "#fff",
+    fontSize: "14px",
   },
   inputRow: {
     display: "flex",
-    gap: "8px",
+    gap: "10px",
+    backgroundColor: "#2a2a3b",
+    padding: "10px",
+    borderRadius: "8px",
+    boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
   },
   input: {
     flex: 1,
-    borderRadius: "5px",
+    borderRadius: "8px",
     border: "1px solid #444",
-    padding: "8px",
-    fontSize: "14px",
+    padding: "10px",
+    fontSize: "16px",
     color: "#fff",
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "#3b3b4f",
+    outline: "none",
   },
   sendButton: {
-    padding: "0 16px",
+    padding: "10px 20px",
     border: "none",
-    borderRadius: "5px",
+    borderRadius: "8px",
     backgroundColor: "#007bff",
     color: "#fff",
     fontWeight: "bold",
+    fontSize: "16px",
     cursor: "pointer",
+    transition: "background-color 0.3s ease",
   },
 };

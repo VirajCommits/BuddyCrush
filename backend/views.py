@@ -176,9 +176,9 @@ def discover_groups():
 
     # Query all groups from the database
     try:
-        print("Right here!...")
         available_groups = Group.query.all()
-        print("These are the available groups:" , available_groups)
+        for group in available_groups:
+            print(group.to_dict())
         groups_data = [group.to_dict() for group in available_groups]  # Convert groups to dictionaries
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -364,6 +364,7 @@ def send_message_to_group(group_id):
     """
     user = session.get("user")
     user_picture = user["picture"]
+    print("This is the user picture that was sent:" , user_picture)
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
@@ -377,7 +378,8 @@ def send_message_to_group(group_id):
     new_message = Message(
         group_id=group_id, 
         user_name=user["name"], 
-        content=content
+        content=content,
+        user_image=user_picture
     )
     db.session.add(new_message)
     db.session.commit()
@@ -385,7 +387,7 @@ def send_message_to_group(group_id):
     # Broadcast to all clients in the group room
     socketio.emit(
         "group_message", 
-        {"user": user["name"], "message": content , "picture":user_picture}, 
+        {"user": user["name"], "message": content , "user_image":user_picture}, 
         room=group_id
     )
 
@@ -411,7 +413,8 @@ def get_messages(group_id):
         {
             "user": m.user_name, 
             "message": m.content,
-            "created_at": m.created_at.isoformat()
+            "created_at": m.created_at.isoformat(),
+            "user_image": m.user_image,
         }
         for m in group_msgs
     ]
@@ -463,6 +466,7 @@ def handle_send_message(data):
     Socket.IO event for directly sending a message via WebSocket.
     Also saves to DB, then emits to the group room.
     """
+    print("Inside handle message section")
     user = session.get("user")
     if not user:
         emit("error", {"error": "Not logged in"})
@@ -475,12 +479,14 @@ def handle_send_message(data):
         return
 
     user_name = user["name"]
+    user_picture = user["picture"]
 
     # Save to DB
     new_message = Message(
         group_id=group_id, 
         user_name=user_name, 
-        content=content
+        content=content,
+        user_image = user_picture
     )
     db.session.add(new_message)
     db.session.commit()

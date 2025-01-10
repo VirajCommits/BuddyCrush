@@ -56,6 +56,7 @@ export default function DiscoverGroups() {
         const groupsResponse = await fetchGroups(); 
         // e.g., groupsResponse.data.groups = [{id, name, members: [...]}, ...]
         const fetchedGroups = groupsResponse.data.groups;
+        console.log("This is the fetched groups:" , fetchGroups)
         setGroups(fetchedGroups);
 
         // 3) Determine which group IDs the user has joined
@@ -117,7 +118,7 @@ export default function DiscoverGroups() {
               {group.members.slice(0, 5).map((member, index) => (
                 <img
                   key={index}
-                  src={member.picture}
+                  src={member.user_image}
                   alt={member.name}
                   style={styles.avatar}
                 />

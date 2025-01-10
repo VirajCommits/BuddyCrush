@@ -63,7 +63,7 @@ export default function HomePage() {
 
   return (
     <div>
-      <h1>Buddy Crush</h1>
+      <h1>Buddy Board</h1>
       <CreateGroup onCreate={handleCreateGroup} />
       <DiscoverGroups
         groups={groups}

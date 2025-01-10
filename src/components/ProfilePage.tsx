@@ -103,7 +103,7 @@ export default function ProfilePage() {
       {/* -- Top Bar / Header -- */}
       <header style={styles.header}>
         <div style={styles.logoArea}>
-          <h1 style={styles.logoText}>Buddy Crush</h1>
+          <h1 style={styles.logoText}>Buddy Board</h1>
         </div>
         <div style={styles.userArea}>
           <img

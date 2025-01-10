@@ -16,11 +16,13 @@ class Message(db.Model):
     user_name = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_image = db.Column(db.String, nullable=False)
 
-    def __init__(self, group_id, user_name, content):
+    def __init__(self, group_id, user_name, content,user_image):
         self.group_id = group_id
         self.user_name = user_name
         self.content = content
+        self.user_image = user_image
 
 class User(db.Model):
     __tablename__ = "user"
@@ -48,7 +50,8 @@ class Group(db.Model):
                 {
                     "id": member.user.id,
                     "name": member.user.name,
-                    "email": member.user.email
+                    "email": member.user.email,
+                    "user_image":member.user.picture
                 }
                 for member in self.members
             ]
@@ -63,13 +66,14 @@ class GroupMember(db.Model):
 
     # Relationships
     group = db.relationship("Group", back_populates="members")
-    user = db.relationship("User", back_populates="memberships")  # Assuming a User model exists
+    user = db.relationship("User", back_populates="memberships")
 
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "group_id": self.group_id
+            "group_id": self.group_id,
+            "profile_picture": self.user.picture
         }
 class UserActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)

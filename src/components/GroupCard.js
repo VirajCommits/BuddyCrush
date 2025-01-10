@@ -27,12 +27,9 @@ export default function GroupCard({ group }) {
       try {
         const response = await fetchActivityFeed(group.id);
         const cur_user = (await fetchProfile()).data.user;
-        console.log(cur_user)
         const today = new Date().toISOString().split("T")[0];
-        console.log("This is today:" , today)
         const hasCompletedToday = response.data.activity.some(
           (item) => {
-            console.log("This is the item:", item, cur_user.email);
             return item.completed_date === today && item.user_email === cur_user.email;
           } 
         );
@@ -67,6 +64,7 @@ export default function GroupCard({ group }) {
     setLoading(true);
     try {
       const data = await completeDailyTask(group.id);
+      console.log("This is the completed data:" , data.message)
       alert(data.message || "Habit completed successfully!");
       setAlreadyCompleted(true);
       // Optionally, refresh activity and leaderboard data
@@ -102,8 +100,10 @@ export default function GroupCard({ group }) {
   return (
     <div style={styles.card}>
       {/* Header with Group Name and Tabs */}
+      <div style={styles.topHeader}>
+        <h3 style={styles.groupName}>{group.name}</h3>
+      </div>
       <div style={styles.header}>
-        <h3 style={styles.groupName}>{group.name} 🐋</h3>
         <div style={styles.tabs}>
           <button
             style={{
@@ -144,27 +144,31 @@ export default function GroupCard({ group }) {
           <Leaderboard leaderboard={leaderboardData} />
         )}
         {activeTab === "about" && (
-          <div style={styles.about}>
-            <p style={styles.description}>
-              {group.description}
-            </p>
-            <p style={styles.totalMembers}>
-              Total members: {group.members.length} members
-            </p>
-            <div style={styles.membersList}>
-              {group.members.map((member) => (
-                <div key={member.email} style={styles.member}>
-                  <img
-                    src={member.picture}
-                    alt={member.name}
-                    style={styles.memberAvatar}
-                  />
-                  <span style={styles.memberName}>{member.name}</span>
-                </div>
-              ))}
-            </div>
+        <div style={styles.about}>
+          {/* Group Description */}
+          <p style={styles.description}>{group.description}</p>
+
+          {/* Total Members */}
+          <p style={styles.totalMembers}>
+            <strong>Total members:</strong> {group.members.length} members
+          </p>
+
+          {/* Members List */}
+          <div style={styles.membersList}>
+            {group.members.map((member) => (
+              <div key={member.email} style={styles.member}>
+                <img
+                  src={member.user_image}
+                  alt={member.name}
+                  style={styles.memberAvatar}
+                />
+                <span style={styles.memberName}>{member.name}</span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
+
       </div>
 
       {/* Error Message */}
@@ -180,10 +184,10 @@ export default function GroupCard({ group }) {
         disabled={alreadyCompleted || loading}
       >
         {alreadyCompleted
-          ? "Completed Today ✔"
+          ? "Completed Today 🎉"
           : loading
-          ? "Completing..."
-          : "Complete Habit"}
+          ? "Completing🚀"
+          : "Complete Habit 🚀🚀"}
       </button>
       <Link key={group.id} href={`/group/${group.id}`} style={styles.groupLink}>
                     <div style={styles.groupCard}>
@@ -195,6 +199,9 @@ export default function GroupCard({ group }) {
 }
 
 const styles = {
+  topHeader: {
+    marginBottom: "20px", // Space between the heading and tabs
+  },
   card: {
     backgroundColor: "#1c1c1c",
     borderRadius: "10px",
@@ -294,4 +301,51 @@ const styles = {
     color: "red",
     marginBottom: "10px",
   },
-};
+    about: {
+      padding: "20px",
+      borderRadius: "8px",
+      color: "#fff",
+    },
+    description: {
+      fontSize: "14px",
+      lineHeight: "1.6",
+      marginBottom: "15px",
+      color: "#ccc", // Softer color for the description
+    },
+    totalMembers: {
+      fontSize: "14px",
+      fontWeight: "600",
+      marginBottom: "15px",
+      color: "#fff",
+    },
+    membersList: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "5px",
+    },
+    member: {
+      display: "flex",
+      alignItems: "center",
+      padding: "8px",
+      borderRadius: "6px",
+      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Light shadow for elevation
+      width: "calc(50% - 10px)", // Fit two members per row with a gap
+    },
+    memberAvatar: {
+      width: "30px",
+      height: "30px",
+      borderRadius: "50%",
+      marginRight: "10px",
+      objectFit: "cover",
+      border: "2px solid #444", // Add subtle border
+    },
+    memberName: {
+      fontSize: "12px",
+      fontWeight: "500",
+      color: "#fff",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+    },
+  };
+  

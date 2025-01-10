@@ -1,5 +1,3 @@
-// src/app/new/page.tsx
-
 "use client";
 
 import React, { useState } from "react";
@@ -35,37 +33,69 @@ export default function NewGroupPage() {
 
   return (
     <div style={styles.pageContainer}>
-      <button style={styles.backButton} onClick={() => window.history.back()}>
-        &lt; BACK
-      </button>
+      <div style={styles.header}>
+        <button style={styles.backButton} onClick={() => window.history.back()}>
+          &lt; BACK
+        </button>
+        <h1 style={styles.pageHeading}>Create a New Group</h1>
+      </div>
 
-      <h1 style={styles.pageHeading}>Your New Accountability Group</h1>
+      <p style={styles.subHeading}>
+        Start a new accountability group and crush your goals together with your friends!
+      </p>
 
       <CreateGroup onCreate={handleCreateGroup} />
+
+      <p style={styles.footerNote}>
+        Invite your friends to join and make your group more impactful!
+      </p>
     </div>
   );
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
   pageContainer: {
-    maxWidth: "800px",
+    maxWidth: "600px",
     margin: "50px auto",
     padding: "20px",
+    backgroundColor: "#1e1e2f", // Aesthetic blueish-purple background
     color: "#fff",
-    backgroundColor: "#121212",
-    borderRadius: "10px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+    textAlign: "center",
+    fontFamily: "Arial, sans-serif",
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "20px",
   },
   backButton: {
     background: "none",
     border: "none",
-    color: "#bbb",
-    cursor: "pointer",
+    color: "#aaa",
     fontSize: "16px",
-    marginBottom: "20px",
+    cursor: "pointer",
+    fontWeight: "bold",
   },
   pageHeading: {
-    fontSize: "28px",
+    fontSize: "24px",
     fontWeight: "bold",
+    textAlign: "center",
+    flex: 1,
+    margin: "0",
+    color: "#fff",
+  },
+  subHeading: {
+    fontSize: "16px",
+    color: "#ccc",
     marginBottom: "30px",
+  },
+  footerNote: {
+    fontSize: "14px",
+    color: "#aaa",
+    marginTop: "20px",
+    fontStyle: "italic",
   },
 };

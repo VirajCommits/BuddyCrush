@@ -1,5 +1,3 @@
-// components/Leaderboard.js
-
 import React from "react";
 
 export default function Leaderboard({ leaderboard }) {
@@ -9,19 +7,22 @@ export default function Leaderboard({ leaderboard }) {
 
   return (
     <div style={styles.container}>
-      <h3>Leaderboard</h3>
       <ol style={styles.list}>
         {leaderboard.map((user, index) => (
           <li key={user.user_id} style={styles.listItem}>
+            {/* Avatar */}
             <img
               src={user.user_picture}
               alt={user.user_name}
               style={styles.avatar}
             />
-            <span style={styles.userName}>{user.user_name}</span>
-            <span style={styles.completionCount}>
-              {user.completion_count} completions
-            </span>
+            {/* User Info */}
+            <div style={styles.userInfo}>
+              <span style={styles.userName}>{user.user_name}</span>
+              <span style={styles.completionCount}>
+                {user.completion_count} completions
+              </span>
+            </div>
           </li>
         ))}
       </ol>
@@ -31,33 +32,47 @@ export default function Leaderboard({ leaderboard }) {
 
 const styles = {
   container: {
-    padding: "10px",
+    padding: "1px",
+    borderRadius: "8px",
+    maxWidth: "500px",
+    margin: "3px auto",
   },
   noData: {
-    color: "#ccc",
+    color: "#ddd",
+    textAlign: "center",
+    fontSize: "14px",
   },
   list: {
     listStyleType: "decimal",
-    paddingLeft: "20px",
+    paddingLeft: "3px",
+    margin: "0",
   },
   listItem: {
     display: "flex",
     alignItems: "center",
-    marginBottom: "8px",
+    padding: "5px 0",
   },
   avatar: {
-    width: "30px",
-    height: "30px",
+    width: "40px",
+    height: "40px",
     borderRadius: "50%",
-    marginRight: "10px",
+    marginRight: "15px",
     objectFit: "cover",
+    border: "2px solid #444",
+  },
+  userInfo: {
+    display: "flex",
+    flexDirection: "column",
+    flex: 1,
   },
   userName: {
-    flex: 1,
+    fontWeight: "600",
+    fontSize: "14px",
     color: "#fff",
+    marginBottom: "5px",
   },
   completionCount: {
-    fontWeight: "bold",
-    color: "#fff",
+    fontSize: "12px",
+    color: "#aaa",
   },
 };

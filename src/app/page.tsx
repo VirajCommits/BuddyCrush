@@ -1,5 +1,3 @@
-// src/app/page.tsx
-
 "use client";
 
 import React, { CSSProperties, useEffect, useState } from "react";
@@ -32,11 +30,10 @@ export default function Page() {
 
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:50000/api/logout", {}, { withCredentials: true });
+      await axios.post("http://localhost:5000/api/logout", {}, { withCredentials: true });
       setIsAuthenticated(false);
       setUser(null);
       alert("Logged out successfully");
-      // Optionally, redirect to home
       window.location.href = "/";
     } catch (error) {
       console.error("Logout failed:", error);
@@ -44,10 +41,10 @@ export default function Page() {
   };
 
   return (
-    <div>
+    <div style={styles.pageContainer}>
       {/* Header */}
       <header style={styles.header}>
-        <h1 style={styles.logo}>Buddy Crush</h1>
+        <h1 style={styles.logo}>Buddy Board</h1>
         {isAuthenticated && user && (
           <div style={styles.userInfo}>
             <a href="/profile">
@@ -57,70 +54,95 @@ export default function Page() {
                 style={styles.avatar}
               />
             </a>
-            <button onClick={handleLogout} style={styles.logoutButton}>
-              Log Out
-            </button>
           </div>
         )}
       </header>
 
       {/* Main Content */}
-      {!isAuthenticated ? (
-        <div style={styles.loginContainer}>
-          <a href="http://localhost:5000/api/google/login">
-            <button style={styles.loginButton}>Sign Up / Log In with Google</button>
-          </a>
-        </div>
-      ) : (
-        <HomePage />
-      )}
+      <main style={styles.main}>
+        <h1 style={styles.mainHeading}>Crush your habits with friends</h1>
+        <p style={styles.subHeading}>
+          Create or join <span style={styles.highlight}>accountability groups</span>, see each other's progress,
+          and compete for the leaderboard!
+        </p>
+        <a href="/login">
+          <button style={styles.ctaButton}>CRUSH MY GOALS ➜</button>
+        </a>
+        <p style={styles.freeText}>100% free!</p>
+
+      </main>
     </div>
   );
 }
 
 const styles: { [key: string]: CSSProperties } = {
+  pageContainer: {
+    backgroundColor: "#121212", // Dark background
+    color: "#fff", // Light text
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+  },
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "10px 20px",
-    backgroundColor: "#121212",
-    color: "#fff",
+    padding: "20px 40px",
+    backgroundColor: "#1C1C1C", // Slightly darker shade for header
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
   },
   logo: {
     fontSize: "24px",
     fontWeight: "bold",
+    color: "#fff",
   },
   userInfo: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
   },
   avatar: {
     width: "40px",
     height: "40px",
     borderRadius: "50%",
-    cursor: "pointer", // Indicate it's clickable
-  },
-  logoutButton: {
-    padding: "10px 15px",
-    backgroundColor: "#f44336",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
     cursor: "pointer",
   },
-  loginContainer: {
+  main: {
     textAlign: "center",
-    marginTop: "50px",
+    margin: "auto",
+    padding: "20px",
+    maxWidth: "800px",
   },
-  loginButton: {
+  mainHeading: {
+    fontSize: "36px",
+    fontWeight: "bold",
+    marginBottom: "20px",
+  },
+  subHeading: {
+    fontSize: "18px",
+    marginBottom: "40px",
+    lineHeight: "1.6",
+  },
+  highlight: {
+    color: "#F76C6C", // Highlight color for important text
+    fontWeight: "bold",
+  },
+  ctaButton: {
     padding: "15px 30px",
     fontSize: "18px",
     color: "#fff",
-    backgroundColor: "#007bff",
+    backgroundColor: "#007BFF",
     border: "none",
     borderRadius: "8px",
     cursor: "pointer",
+    fontWeight: "bold",
+    transition: "background-color 0.3s ease",
+  },
+  freeText: {
+    fontSize: "14px",
+    color: "#aaa",
+    marginTop: "10px",
+  },
+  exampleCard: {
+    marginTop: "50px",
   },
 };
