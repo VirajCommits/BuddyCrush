@@ -3,8 +3,8 @@
 from flask import redirect, request, jsonify, session
 from flask_socketio import send, join_room, leave_room, emit
 from backend.socketio_instance import socketio  # Import the SocketIO instance
-from models import Message
-from extensions import db
+from backend.models import Message
+from backend.extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
