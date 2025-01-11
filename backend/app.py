@@ -19,16 +19,24 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
 
-# Database config
+# Database configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Redis session configuration
 app.config["SESSION_TYPE"] = "redis"
-app.config["SESSION_REDIS"] = redis.from_url(os.getenv("REDIS_URL", "rediss://:pee0d4b17fdad61de809073036ee8a5e83ccaa04d9c802cd2a3fb4dfe37e4cd83@ec2-34-206-74-41.compute-1.amazonaws.com:20070"))
-app.config["SESSION_PERMANENT"] = True 
+app.config["SESSION_REDIS"] = redis.from_url(
+    os.getenv(
+        "REDIS_URL", 
+        "rediss://:pee0d4b17fdad61de809073036ee8a5e83ccaa04d9c802cd2a3fb4dfe37e4cd83@ec2-34-206-74-41.compute-1.amazonaws.com:20070"
+    )
+)
+app.config["SESSION_PERMANENT"] = True
 
 db.init_app(app)
 migrate = Migrate(app, db)  # Use Flask-Migrate for schema changes
 
+# Socket.IO configuration
 socketio.init_app(app, cors_allowed_origins="http://localhost:3000")
 
 # CORS Configuration
@@ -38,11 +46,11 @@ CORS(
     supports_credentials=True,
 )
 
-app.config["SESSION_TYPE"] = "filesystem"
+# Cookie settings for secure cross-origin cookies
 app.config.update(
-    SESSION_COOKIE_SECURE=False,   # True in production with HTTPS
+    SESSION_COOKIE_SECURE=True,   # True in production with HTTPS
     SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript from accessing cookies
-    SESSION_COOKIE_SAMESITE="None", # Mitigate CSRF attacks
+    SESSION_COOKIE_SAMESITE="None", # Required for cross-origin cookies
 )
 Session(app)
 
