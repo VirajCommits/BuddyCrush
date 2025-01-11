@@ -113,6 +113,7 @@ def logout():
     return jsonify({"message": "Logged out successfully"})
 
 def profile():
+    print("This is the session(profile):" , session)
     user = session.get("user")
     print("This is the user:" , user)
     if user:
@@ -123,7 +124,6 @@ def create_group():
     global next_group_id
 
     user = session.get("user")
-    print("This is the user --------------- :" , user , user["picture"])
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
@@ -139,8 +139,6 @@ def create_group():
 
         group_name = data.get("name")
         group_description = data.get("description")
-
-    print("And this is the group name and desc:" , group_name , group_description)
 
     user_picture = user["picture"]
 
