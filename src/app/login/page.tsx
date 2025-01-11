@@ -8,7 +8,7 @@ export default function LoginPage() {
       <div style={styles.loginBox}>
         <h1 style={styles.heading}>Lets get you signed in!</h1>
         <p style={styles.subheading}>Log in with your Google account to get started</p>
-        <a href="http://localhost:5000/api/google/login">
+        <a href="https://buddy-board-88fd54c902d8.herokuapp.com/api/google/login">
           <button style={styles.loginButton}>Log In with Google</button>
         </a>
       </div>

@@ -8,7 +8,7 @@ export default function Test() {
   useEffect(() => {
     async function fetchMessage() {
       try {
-        const response = await fetch('http://localhost:5000/api/google/login'); // Flask endpoint
+        const response = await fetch('https://buddy-board-88fd54c902d8.herokuapp.com/api/google/login'); // Flask endpoint
         const data = await response.json();
         console.log(data);
         setMessage(data); // Update state with the response

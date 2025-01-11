@@ -19,7 +19,7 @@ export default function Page() {
   useEffect(() => {
     // Check if the user is authenticated
     axios
-      .get("http://localhost:5000/api/profile", { withCredentials: true })
+      .get("https://buddy-board-88fd54c902d8.herokuapp.com/api/profile", { withCredentials: true })
       .then((response) => {
         setIsAuthenticated(true);
         setUser(response.data.user);
@@ -32,7 +32,7 @@ export default function Page() {
   const _ = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/logout",
+        "https://buddy-board-88fd54c902d8.herokuapp.com/api/logout",
         {},
         { withCredentials: true }
       );
