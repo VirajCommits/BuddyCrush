@@ -9,6 +9,7 @@ from backend.extensions import db
 from backend.socketio_instance import socketio
 from backend.urls import setup_routes
 import redis
+from redis import SSLConnection
 
 # Load environment variables from .env
 load_dotenv()
@@ -23,13 +24,14 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Redis session configuration
 app.config["SESSION_TYPE"] = "redis"
-app.config["SESSION_REDIS"] = redis.from_url(
-    os.getenv(
-        "REDIS_URL", 
+app.config["SESSION_REDIS"] = redis.StrictRedis(
+    from_url=os.getenv(
+        "REDIS_URL",
         "rediss://:pee0d4b17fdad61de809073036ee8a5e83ccaa04d9c802cd2a3fb4dfe37e4cd83@ec2-34-206-74-41.compute-1.amazonaws.com:20070"
-    )
+    ),
+    ssl_cert_reqs=None,  # Disable SSL certificate verification
+    connection_class=SSLConnection,
 )
 app.config["SESSION_PERMANENT"] = True
 
