@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from backend.extensions import db
 from backend.socketio_instance import socketio
 from backend.urls import setup_routes
+import redis
 
 # Load environment variables from .env
 load_dotenv()
@@ -19,8 +20,11 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
 
 # Database config
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("postgresql://u582frpshv43qg:p5936dc0e6c08ab939d93c45321a535f008183818421158cd736da9a02b1ddc64@cd5gks8n4kb20g.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d88csj4ku7ra2g", "sqlite:///app.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SESSION_TYPE"] = "redis"
+
+app.config["SESSION_REDIS"] = redis.from_url(os.getenv("REDIS_URL"))
 
 db.init_app(app)
 migrate = Migrate(app, db)  # Use Flask-Migrate for schema changes
@@ -38,7 +42,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 app.config.update(
     SESSION_COOKIE_SECURE=False,   # True in production with HTTPS
     SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript from accessing cookies
-    SESSION_COOKIE_SAMESITE="Lax", # Mitigate CSRF attacks
+    SESSION_COOKIE_SAMESITE="None", # Mitigate CSRF attacks
 )
 Session(app)
 

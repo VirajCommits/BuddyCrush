@@ -114,6 +114,7 @@ def logout():
 
 def profile():
     user = session.get("user")
+    print("This is the user:" , user)
     if user:
         return jsonify({"user": user})
     return jsonify({"error": "Not logged in"}), 401
