@@ -24,8 +24,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SESSION_TYPE"] = "redis"
 
-app.config["SESSION_REDIS"] = redis.from_url(os.getenv("REDIS_URL"))
-
 db.init_app(app)
 migrate = Migrate(app, db)  # Use Flask-Migrate for schema changes
 
