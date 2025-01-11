@@ -23,6 +23,8 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_REDIS"] = redis.from_url(os.getenv("REDIS_URL", "rediss://:pee0d4b17fdad61de809073036ee8a5e83ccaa04d9c802cd2a3fb4dfe37e4cd83@ec2-34-206-74-41.compute-1.amazonaws.com:20070"))
+app.config["SESSION_PERMANENT"] = True 
 
 db.init_app(app)
 migrate = Migrate(app, db)  # Use Flask-Migrate for schema changes
