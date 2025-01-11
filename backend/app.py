@@ -25,13 +25,12 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 app.config["SESSION_TYPE"] = "redis"
-app.config["SESSION_REDIS"] = redis.StrictRedis(
-    from_url=os.getenv(
+app.config["SESSION_REDIS"] = redis.from_url(
+    os.getenv(
         "REDIS_URL",
         "rediss://:pee0d4b17fdad61de809073036ee8a5e83ccaa04d9c802cd2a3fb4dfe37e4cd83@ec2-34-206-74-41.compute-1.amazonaws.com:20070"
     ),
-    ssl_cert_reqs=None,  # Disable SSL certificate verification
-    connection_class=SSLConnection,
+    ssl_cert_reqs=None  # Disable SSL certificate verification
 )
 app.config["SESSION_PERMANENT"] = True
 
