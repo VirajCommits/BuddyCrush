@@ -1,17 +1,18 @@
-// components/GroupCard.js
+// src/components/GroupCard.js
 
 "use client";
 
 import React, { useState, useEffect } from "react";
 import Leaderboard from "./Leaderboard";
 import ActivityFeed from "./ActivityFeed";
-import Link from "next/link";
+import { FaComments } from "react-icons/fa";
 import {
   completeDailyTask,
   fetchActivityFeed,
   fetchLeaderboard,
   fetchProfile,
 } from "../utils/api";
+import NextImage from 'next/image'; // Renamed import to avoid conflicts
 
 export default function GroupCard({ group }) {
   const [activeTab, setActiveTab] = useState("activity");
@@ -64,7 +65,7 @@ export default function GroupCard({ group }) {
     setLoading(true);
     try {
       const data = await completeDailyTask(group.id);
-      console.log("This is the completed data:" , data.message)
+      console.log("This is the completed data:", data.message);
       alert(data.message || "Habit completed successfully!");
       setAlreadyCompleted(true);
       // Optionally, refresh activity and leaderboard data
@@ -95,6 +96,11 @@ export default function GroupCard({ group }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle chat icon click
+  const handleChatClick = () => {
+    window.location.href = `/group/${group.id}`;
   };
 
   return (
@@ -133,6 +139,11 @@ export default function GroupCard({ group }) {
             About
           </button>
         </div>
+        <FaComments
+          style={styles.chatIcon}
+          title="Go to Chat"
+          onClick={handleChatClick}
+        />
       </div>
 
       {/* Content Area */}
@@ -144,31 +155,32 @@ export default function GroupCard({ group }) {
           <Leaderboard leaderboard={leaderboardData} />
         )}
         {activeTab === "about" && (
-        <div style={styles.about}>
-          {/* Group Description */}
-          <p style={styles.description}>{group.description}</p>
+          <div style={styles.about}>
+            {/* Group Description */}
+            <p style={styles.description}>{group.description}</p>
 
-          {/* Total Members */}
-          <p style={styles.totalMembers}>
-            <strong>Total members:</strong> {group.members.length} members
-          </p>
+            {/* Total Members */}
+            <p style={styles.totalMembers}>
+              {group.members.length} members
+            </p>
 
-          {/* Members List */}
-          <div style={styles.membersList}>
-            {group.members.map((member) => (
-              <div key={member.email} style={styles.member}>
-                <img
-                  src={member.user_image}
-                  alt={member.name}
-                  style={styles.memberAvatar}
-                />
-                <span style={styles.memberName}>{member.name}</span>
-              </div>
-            ))}
+            {/* Members List */}
+            <div style={styles.membersList}>
+              {group.members.map((member) => (
+                <div key={member.email} style={styles.member}>
+                  <NextImage
+                    src={member.user_image || "https://via.placeholder.com/30"}
+                    alt={`${member.name}'s avatar`}
+                    width={30}
+                    height={30}
+                    style={styles.memberAvatar}
+                  />
+                  <span style={styles.memberName}>{member.name}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-
+        )}
       </div>
 
       {/* Error Message */}
@@ -189,15 +201,13 @@ export default function GroupCard({ group }) {
           ? "Completing🚀"
           : "Complete Habit 🚀🚀"}
       </button>
-      <Link key={group.id} href={`/group/${group.id}`} style={styles.groupLink}>
-                    <div style={styles.groupCard}>
-                      <h3>Click here to chat!</h3>
-                    </div>
-                  </Link>
     </div>
   );
 }
 
+/** 
+ * Light Purplish Themed Inline Styles with Enhanced UI and Scrollable Sections
+ */
 const styles = {
   topHeader: {
     marginBottom: "20px", // Space between the heading and tabs
@@ -220,6 +230,7 @@ const styles = {
   },
   groupName: {
     margin: "0",
+    color: "#fff", // Ensure group name is visible on dark background
   },
   tabs: {
     display: "flex",
@@ -233,6 +244,7 @@ const styles = {
     borderRadius: "5px",
     cursor: "pointer",
     fontSize: "0.9rem",
+    transition: "background-color 0.3s",
   },
   activeTab: {
     backgroundColor: "#007bff",
@@ -240,16 +252,13 @@ const styles = {
   content: {
     flex: 1,
     marginBottom: "10px",
-    overflowY: "auto",
+    overflowY: "auto", // Enable vertical scrolling
+    maxHeight: "350px", // Adjust based on your card's height
   },
   about: {
     padding: "10px",
     backgroundColor: "#2c2c2c",
     borderRadius: "5px",
-  },
-  groupLink: {
-    textDecoration: "none",
-    color: "inherit",
   },
   description: {
     marginBottom: "10px",
@@ -283,6 +292,12 @@ const styles = {
     color: "#fff",
     fontSize: "0.9rem",
   },
+  chatIcon: {
+    color: "#007bff",
+    fontSize: "20px",
+    cursor: "pointer",
+    transition: "color 0.3s",
+  },
   completeButton: {
     padding: "10px",
     backgroundColor: "#28a745",
@@ -292,6 +307,7 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold",
     marginTop: "10px",
+    transition: "background-color 0.3s",
   },
   completedButton: {
     backgroundColor: "#6c757d",
@@ -301,51 +317,4 @@ const styles = {
     color: "red",
     marginBottom: "10px",
   },
-    about: {
-      padding: "20px",
-      borderRadius: "8px",
-      color: "#fff",
-    },
-    description: {
-      fontSize: "14px",
-      lineHeight: "1.6",
-      marginBottom: "15px",
-      color: "#ccc", // Softer color for the description
-    },
-    totalMembers: {
-      fontSize: "14px",
-      fontWeight: "600",
-      marginBottom: "15px",
-      color: "#fff",
-    },
-    membersList: {
-      display: "flex",
-      flexWrap: "wrap",
-      gap: "5px",
-    },
-    member: {
-      display: "flex",
-      alignItems: "center",
-      padding: "8px",
-      borderRadius: "6px",
-      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Light shadow for elevation
-      width: "calc(50% - 10px)", // Fit two members per row with a gap
-    },
-    memberAvatar: {
-      width: "30px",
-      height: "30px",
-      borderRadius: "50%",
-      marginRight: "10px",
-      objectFit: "cover",
-      border: "2px solid #444", // Add subtle border
-    },
-    memberName: {
-      fontSize: "12px",
-      fontWeight: "500",
-      color: "#fff",
-      whiteSpace: "nowrap",
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-    },
-  };
-  
+};

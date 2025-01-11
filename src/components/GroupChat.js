@@ -1,5 +1,3 @@
-// src/components/GroupChat.js
-
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
@@ -14,32 +12,28 @@ export default function GroupChat({ groupId }) {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    // Initialize the socket only once
+    // Initialize the socket
     if (!socketRef.current) {
       socketRef.current = io("http://localhost:5000", {
         transports: ["websocket"],
-        reconnectionAttempts: 5, // Optional: Configure reconnection attempts
+        reconnectionAttempts: 5,
       });
     }
 
     const socket = socketRef.current;
 
-    // Function to handle incoming messages
     const handleGroupMessage = (message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     };
 
-    // Join the group room
     socket.emit("join_group", { group_id: groupId });
-
-    // Listen for group messages
     socket.on("group_message", handleGroupMessage);
 
-    // Fetch historical messages
     const fetchHistoricalMessages = async () => {
       try {
         const response = await fetchMessages(groupId);
         setMessages(response.data.messages || []);
+        console.log("these are the messages:",messages)
       } catch (err) {
         console.error("Error fetching messages:", err);
         setError("Failed to fetch messages.");
@@ -48,13 +42,9 @@ export default function GroupChat({ groupId }) {
 
     fetchHistoricalMessages();
 
-    // Cleanup function to remove listeners and leave the room
     return () => {
       socket.off("group_message", handleGroupMessage);
       socket.emit("leave_group", { group_id: groupId });
-
-      // Optionally disconnect the socket if it's no longer needed
-      // socket.disconnect();
     };
   }, [groupId]);
 
@@ -66,7 +56,7 @@ export default function GroupChat({ groupId }) {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() === "") return;
+    if (!newMessage.trim()) return;
 
     const messageData = {
       group_id: groupId,
@@ -74,13 +64,8 @@ export default function GroupChat({ groupId }) {
     };
 
     try {
-      // Optionally send the message to the backend API for persistence
       await apiSendMessage(groupId, newMessage.trim());
-
-      // Emit the message to the socket server
       socketRef.current.emit("send_message", messageData);
-
-      // Clear the input field
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
@@ -88,7 +73,6 @@ export default function GroupChat({ groupId }) {
     }
   };
 
-  // Optional: Handle "Enter" key press for sending messages
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSendMessage();
@@ -107,6 +91,9 @@ export default function GroupChat({ groupId }) {
     <div style={styles.container}>
       <h2 style={styles.heading}>Group Chat</h2>
       <div style={styles.chatBox}>
+        {messages.length === 0 && (
+          <p style={styles.placeholder}>Be the first to write a message!</p>
+        )}
         {messages.map((msg, index) => (
           <div key={index} style={styles.message}>
             <strong>{msg.user}:</strong> {msg.message}
@@ -124,16 +111,13 @@ export default function GroupChat({ groupId }) {
           onKeyDown={handleKeyPress}
         />
         <button onClick={handleSendMessage} style={styles.sendButton}>
-          Send Viraj
+          Send
         </button>
       </div>
     </div>
   );
 }
 
-/** 
- * Inline styles for the component
- */
 const styles = {
   container: {
     maxWidth: "800px",
@@ -159,6 +143,13 @@ const styles = {
     overflowY: "auto",
     marginBottom: "20px",
     backgroundColor: "#121212",
+    position: "relative",
+  },
+  placeholder: {
+    textAlign: "center",
+    color: "#aaa",
+    fontStyle: "italic",
+    marginTop: "20px",
   },
   message: {
     marginBottom: "10px",

@@ -3,7 +3,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchGroups, joinGroup } from "../utils/api"; // or however you fetch data
+import { fetchGroups, joinGroup } from "../utils/api"; // Ensure these functions are properly defined
+import { FaUsers } from "react-icons/fa"; // Font Awesome icon for member count
+import NextImage from 'next/image'; // Renamed import to avoid conflicts
 
 type User = {
   email: string;
@@ -12,6 +14,7 @@ type User = {
 };
 
 type Member = {
+  user_image: string | undefined;
   email: string;
   name: string;
   picture: string;
@@ -25,10 +28,11 @@ type Group = {
 };
 
 export default function DiscoverGroups() {
-  const [user, setUser] = useState<User | null>(null);
+  const [, setUser] = useState<User | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [joinedGroups, setJoinedGroups] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string>("");
+  const [avatarSrcs, setAvatarSrcs] = useState<{ [key: number]: string }>({});
 
   // Helper function to check if user already joined a group
   const isJoined = (groupId: number) => joinedGroups.has(groupId);
@@ -53,10 +57,8 @@ export default function DiscoverGroups() {
         setUser(profileData.user);
 
         // 2) Fetch all groups
-        const groupsResponse = await fetchGroups(); 
-        // e.g., groupsResponse.data.groups = [{id, name, members: [...]}, ...]
+        const groupsResponse = await fetchGroups();
         const fetchedGroups = groupsResponse.data.groups;
-        console.log("This is the fetched groups:" , fetchGroups)
         setGroups(fetchedGroups);
 
         // 3) Determine which group IDs the user has joined
@@ -65,13 +67,17 @@ export default function DiscoverGroups() {
             .filter((group: Group) =>
               group.members.some((m) => m.email === profileData.user.email)
             )
-            .map((g) => g.id);
+            .map((g: Group) => g.id);
 
           setJoinedGroups(new Set(joined));
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching data:", err);
-        setError(err.message || "Failed to fetch data.");
+        if (err instanceof Error) {
+          setError(err.message || "Failed to fetch data.");
+        } else {
+          setError("Failed to fetch data.");
+        }
       }
     };
 
@@ -85,55 +91,66 @@ export default function DiscoverGroups() {
   const handleJoin = async (groupId: number) => {
     try {
       await joinGroup(groupId); // POST request to join the group
-      alert("Successfully joined the group!");
-      setJoinedGroups((prev) => new Set(prev).add(groupId)); // update local state
+      setJoinedGroups((prev) => new Set(prev).add(groupId)); // Update local state
     } catch (error) {
       console.error("Error joining group:", error);
-      alert("Failed to join the group.");
+      setError("Failed to join the group. Please try again later.");
     }
+  };
+
+  /**
+   * Handle Image Load Error
+   * Sets a fallback image if the original image fails to load
+   */
+  const handleImageError = (groupId: number) => {
+    setAvatarSrcs((prev) => ({
+      ...prev,
+      [groupId]: "https://via.placeholder.com/40",
+    }));
   };
 
   if (error) {
     return (
-      <div style={{ color: "red", textAlign: "center", marginTop: "50px" }}>
-        Error: {error}
+      <div style={styles.errorMsg}>
+        <p>Error: {error}</p>
       </div>
     );
   }
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.heading}>Discover Groups</h2>
       <div style={styles.grid}>
         {groups.map((group) => (
           <div key={group.id} style={styles.card}>
             <div style={styles.cardHeader}>
               <h3 style={styles.cardTitle}>{group.name}</h3>
-              <span style={styles.memberCount}>
-                👥 {group.members.length}{" "}
-                {group.members.length === 1 ? "member" : "members"}
-              </span>
+              <div style={styles.memberCount}>
+                <FaUsers style={{ marginRight: "5px" }} />
+                {group.members.length}{" "}
+                {group.members.length === 1 ? "Member" : "Members"}
+              </div>
             </div>
             <div style={styles.avatars}>
               {group.members.slice(0, 5).map((member, index) => (
-                <img
+                <NextImage
                   key={index}
-                  src={member.user_image}
-                  alt={member.name}
+                  src={avatarSrcs[group.id] || member.user_image || "https://via.placeholder.com/40"}
+                  alt={`${member.name}'s avatar`}
+                  width={40}
+                  height={40}
                   style={styles.avatar}
+                  onError={() => handleImageError(group.id)}
                 />
               ))}
               {group.members.length > 5 && (
-                <span style={styles.moreMembers}>
-                  +{group.members.length - 5}
-                </span>
+                <span style={styles.moreMembers}>+{group.members.length - 5}</span>
               )}
             </div>
             <p style={styles.description}>{group.description}</p>
-
-            {/* Show 'Joined' label or 'Join' button */}
             {isJoined(group.id) ? (
-              <span style={styles.joinedTag}>Joined</span>
+              <button style={{ ...styles.joinButton, ...styles.joinedButton }} disabled>
+                Joined
+              </button>
             ) : (
               <button
                 style={styles.joinButton}
@@ -149,87 +166,106 @@ export default function DiscoverGroups() {
   );
 }
 
+/** 
+ * Light Bluish-Pinkish Themed Inline Styles with Enhanced UI
+ */
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    padding: "20px",
+    padding: "40px 20px",
     maxWidth: "1200px",
     margin: "auto",
-  },
-  heading: {
-    fontSize: "24px",
-    fontWeight: "bold",
-    marginBottom: "20px",
-    textAlign: "center",
-    color: "#fff",
+    fontFamily: "'Roboto', sans-serif",
   },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "20px",
+    gap: "30px",
   },
   card: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: "10px",
-    padding: "20px",
-    color: "#fff",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+    backgroundColor: "#CCCCFF",
+    borderRadius: "15px",
+    padding: "25px",
+    boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
+    transition: "transform 0.3s, box-shadow 0.3s",
   },
   cardHeader: {
     marginBottom: "15px",
   },
   cardTitle: {
-    fontSize: "18px",
+    fontSize: "1.5rem",
     fontWeight: "bold",
-    marginBottom: "5px",
+    color: "#4B4B4B",
+    margin: "0 0 10px 0",
   },
   memberCount: {
-    fontSize: "14px",
-    color: "#aaa",
-    marginBottom: "5px",
+    display: "flex",
+    alignItems: "center",
+    fontSize: "0.9rem",
+    color: "#777",
   },
   avatars: {
     display: "flex",
     alignItems: "center",
     marginBottom: "15px",
+    position: "relative",
   },
   avatar: {
-    width: "30px",
-    height: "30px",
     borderRadius: "50%",
-    marginRight: "5px",
-    border: "2px solid #fff",
     objectFit: "cover",
+    marginRight: "-10px",
+    border: "2px solid #fff",
+    boxShadow: "0 0 0 1px rgba(0,0,0,0.1)",
+    cursor: "pointer",
+    transition: "transform 0.3s, box-shadow 0.3s",
   },
   moreMembers: {
-    fontSize: "14px",
-    color: "#aaa",
-    marginLeft: "5px",
+    fontSize: "0.9rem",
+    color: "#555",
+    marginLeft: "10px",
   },
   description: {
-    fontSize: "14px",
-    color: "#ddd",
+    fontSize: "1rem",
+    color: "#555",
     marginBottom: "20px",
+    flexGrow: 1,
   },
   joinButton: {
-    padding: "10px 15px",
-    backgroundColor: "#007bff",
+    padding: "10px 20px",
+    backgroundColor: "#6A5ACD", // SlateBlue
     color: "#fff",
     border: "none",
-    borderRadius: "5px",
+    borderRadius: "8px",
     cursor: "pointer",
     fontWeight: "bold",
-    transition: "background-color 0.3s",
+    fontSize: "1rem",
+    transition: "background-color 0.3s, transform 0.3s",
   },
-  joinedTag: {
-    display: "inline-block",
-    padding: "8px 14px",
-    borderRadius: "5px",
-    backgroundColor: "#28a745",
-    color: "#fff",
-    fontWeight: "bold",
+  joinedButton: {
+    backgroundColor: "#32CD32", // LimeGreen
+    cursor: "not-allowed",
+  },
+  joinButtonHover: {
+    backgroundColor: "#483D8B", // DarkSlateBlue
+    transform: "scale(1.05)",
+  },
+  cardHover: {
+    transform: "translateY(-5px)",
+    boxShadow: "0 15px 25px rgba(0,0,0,0.2)",
+  },
+  errorMsg: {
+    color: "red",
     textAlign: "center",
+    marginTop: "50px",
+    fontSize: "1.2rem",
+  },
+  loading: {
+    color: "#333",
+    textAlign: "center",
+    marginTop: "50px",
+    fontFamily: "sans-serif",
+    fontSize: "1.2rem",
   },
 };

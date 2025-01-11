@@ -1,7 +1,10 @@
+// src/components/ProfilePage.tsx
+
 "use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import NextImage from 'next/image'; // Added import
 
 type User = {
   name: string;
@@ -21,6 +24,7 @@ export default function ProfilePage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [joinedGroups, setJoinedGroups] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string>("");
+  const [, setAvatarSrcs] = useState<{ [key: number]: string }>({});
 
   // On component mount, fetch user & groups
   useEffect(() => {
@@ -48,16 +52,20 @@ export default function ProfilePage() {
 
         // 3) Determine which groups the user has joined
         const userEmail = profileData.user.email;
-        console.log(allGroups , userEmail)
+        console.log(allGroups, userEmail);
         const joinedIds = allGroups
           .filter((g) => g.members.some((m) => m.email === userEmail))
           .map((g) => g.id);
 
         setGroups(allGroups);
         setJoinedGroups(new Set(joinedIds));
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching data:", err);
-        setError(err.message || "Failed to fetch data.");
+        if (err instanceof Error) {
+          setError(err.message || "Failed to fetch data.");
+        } else {
+          setError("Failed to fetch data.");
+        }
       }
     };
 
@@ -77,14 +85,29 @@ export default function ProfilePage() {
         throw new Error("Logout failed");
       }
       window.location.href = "/";
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      alert("Logout failed, see console for details.");
+      if (err instanceof Error) {
+        alert(`Logout failed: ${err.message}`);
+      } else {
+        alert("Logout failed. Please try again.");
+      }
     }
   };
 
   // Helper to see if a group ID is joined
   const isJoined = (groupId: number) => joinedGroups.has(groupId);
+
+  /**
+   * Handle Image Load Error
+   * Sets a fallback image if the original image fails to load
+   */
+  const handleImageError = (groupId: number) => {
+    setAvatarSrcs((prev) => ({
+      ...prev,
+      [groupId]: "https://via.placeholder.com/40",
+    }));
+  };
 
   // Render states:
   if (error) {
@@ -106,10 +129,13 @@ export default function ProfilePage() {
           <h1 style={styles.logoText}>Buddy Board</h1>
         </div>
         <div style={styles.userArea}>
-          <img
-            src={user.picture}
+          <NextImage
+            src={user.picture || "https://via.placeholder.com/40"}
             alt={`${user.name}'s avatar`}
+            width={40}
+            height={40}
             style={styles.userAvatar}
+            onError={() => handleImageError(0)} // Assuming groupId 0 for user avatar
           />
         </div>
       </header>
@@ -118,7 +144,6 @@ export default function ProfilePage() {
         {/* Profile Card */}
         <section style={styles.profileCard}>
           <h2 style={styles.welcomeText}>Welcome, {user.name}!</h2>
-          <img src={user.picture} alt="avatar" style={styles.avatar} />
           <p style={styles.emailText}>Email: {user.email}</p>
           <button onClick={handleLogout} style={styles.logoutButton}>
             Log Out
@@ -218,6 +243,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     height: "40px",
     borderRadius: "50%",
     objectFit: "cover",
+    border: "2px solid #fff",
   },
   container: {
     flex: 1,
@@ -237,14 +263,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   welcomeText: {
     fontSize: "1.8rem",
     margin: "0 0 10px 0",
-  },
-  avatar: {
-    width: "120px",
-    height: "120px",
-    borderRadius: "50%",
-    margin: "10px 0",
-    objectFit: "cover",
-    boxShadow: "0 0 6px rgba(255,255,255,0.1)",
   },
   emailText: {
     margin: "10px 0 20px 0",
@@ -310,10 +328,10 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   groupCard: {
     backgroundColor: "#1c1c1c",
-    borderRadius: "10px",
-    padding: "20px",
     textAlign: "center",
     boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+    borderRadius: "10px",
+    padding: "15px",
   },
   groupDesc: {
     color: "#ccc",

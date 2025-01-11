@@ -1,15 +1,33 @@
-// pages/profile.js
-
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useEffect, useState } from "react";
+import React, { CSSProperties, useEffect, useState } from "react";
 import axios from "axios";
 import GroupCard from "../../components/GroupCard";
+import { useRouter } from "next/navigation";
+import NextImage from 'next/image'; // Renamed import
+
+// Define the User type
+interface User {
+  name: string;
+  email: string;
+  picture: string;
+}
+
+// Define the Group type based on your data structure
+interface Group {
+  id: number;
+  name: string;
+  members: Array<{ email: string }>;
+  // Add other relevant fields if necessary
+}
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
-  const [joinedGroups, setJoinedGroups] = useState([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [joinedGroups, setJoinedGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   // Fetch user profile on mount
   useEffect(() => {
@@ -19,7 +37,7 @@ export default function Profile() {
           withCredentials: true,
         });
         setUser(response.data.user);
-      } catch (err) {
+      } catch (err: any) {
         setError(err.response?.data?.error || "Failed to fetch profile");
       }
     };
@@ -36,8 +54,8 @@ export default function Profile() {
         const response = await axios.get("http://localhost:5000/api/groups/discover", {
           withCredentials: true,
         });
-        const allGroups = response.data.groups || [];
-        const joined = allGroups.filter((g) =>
+        const allGroups: Group[] = response.data.groups || [];
+        const joined = allGroups.filter((g: Group) =>
           g.members.some((m) => m.email === user.email)
         );
         setJoinedGroups(joined);
@@ -49,22 +67,37 @@ export default function Profile() {
     fetchJoinedGroups();
   }, [user]);
 
+  // Check if all required resources (data and images) are loaded
+  useEffect(() => {
+    if (user) {
+      const img = new Image();
+      setTimeout(() => {
+        img.src = user.picture;
+      }, 300); // Add a small delay
+      img.onload = () => setLoading(false);
+      img.onerror = () => {
+        console.error("Error loading image");
+        setLoading(false);
+      };
+    }
+  }, [user]);
+
   const handleLogout = async () => {
     try {
       await axios.post("http://localhost:5000/api/logout", {}, { withCredentials: true });
-      window.location.href = "/";
+      router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
       alert("Logout failed, see console for details.");
     }
   };
 
-  if (error) {
-    return <div style={styles.errorMsg}>Error: {error}</div>;
+  if (loading) {
+    return <div style={styles.loading}>Loading profile...</div>;
   }
 
-  if (!user) {
-    return <div style={styles.loading}>Loading profile...</div>;
+  if (error) {
+    return <div style={styles.errorMsg}>Error: {error}</div>;
   }
 
   return (
@@ -75,16 +108,32 @@ export default function Profile() {
           <h1 style={styles.logoText}>Buddy Board</h1>
         </div>
         <div style={styles.userArea}>
-          <img src={user.picture} alt={`${user.name}'s avatar`} style={styles.userAvatar} />
+          {/* Replaced <img> with <NextImage> */}
+          <NextImage
+            src={user?.picture || "https://via.placeholder.com/50"}
+            alt={`${user?.name}'s avatar`}
+            width={50}
+            height={50}
+            style={styles.userAvatar}
+            onClick={handleLogout}
+            title="Logout"
+          />
         </div>
       </header>
 
       <div style={styles.container}>
         {/* Profile Card */}
         <section style={styles.profileCard}>
-          <h2 style={styles.welcomeText}>Welcome, {user.name}!</h2>
-          <img src={user.picture} alt="avatar" style={styles.avatar} />
-          <p style={styles.emailText}>Email: {user.email}</p>
+          <h2 style={styles.welcomeText}>Welcome, {user?.name}!</h2>
+          {/* Replaced <img> with <NextImage> */}
+          <NextImage
+            src={user?.picture || "https://via.placeholder.com/140"}
+            alt={`${user?.name}'s avatar`}
+            width={140}
+            height={140}
+            style={styles.avatar}
+          />
+          <p style={styles.emailText}>Email: {user?.email}</p>
           <button onClick={handleLogout} style={styles.logoutButton}>
             Log Out
           </button>
@@ -134,7 +183,7 @@ export default function Profile() {
 /** 
  * Dark-themed inline styles
  */
-const styles = {
+const styles: { [key: string]: CSSProperties } = {
   errorMsg: {
     color: "red",
     textAlign: "center",
@@ -163,18 +212,27 @@ const styles = {
     padding: "20px 30px",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
   },
+  logoArea: {
+    // Add any specific styles if needed
+  },
   logoText: {
     fontSize: "1.8rem",
     fontWeight: "bold",
     color: "#FFFFFF",
     margin: 0,
   },
+  userArea: {
+    display: "flex",
+    alignItems: "center",
+  },
   userAvatar: {
     width: "50px",
     height: "50px",
     borderRadius: "50%",
-    objectFit: "cover",
+    objectFit: "cover", // Ensure the image covers the container
     border: "2px solid #555",
+    cursor: "pointer",
+    transition: "transform 0.3s, box-shadow 0.3s",
   },
   container: {
     flex: 1,
@@ -225,8 +283,9 @@ const styles = {
   },
   cardGrid: {
     display: "flex",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    flexWrap: "wrap",
     gap: "20px",
+    justifyContent: "center",
   },
   card: {
     backgroundColor: "#2A2A40",
@@ -238,6 +297,8 @@ const styles = {
     flexDirection: "column",
     justifyContent: "space-between",
     gap: "10px",
+    flex: "1 1 280px",
+    maxWidth: "300px",
   },
   cardTitle: {
     fontSize: "1.5rem",
@@ -271,6 +332,7 @@ const styles = {
     fontSize: "1.8rem",
     marginBottom: "20px",
     fontWeight: "bold",
+    textAlign: "center",
   },
   noGroupsText: {
     color: "#BBBBBB",

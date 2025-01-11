@@ -167,7 +167,6 @@ def create_group():
         "message": f"Group '{group_name}' created successfully!",
         "group": new_group.to_dict()
     })
-
 def discover_groups():
     # Check if the user is logged in
     user = session.get("user")

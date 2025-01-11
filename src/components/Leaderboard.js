@@ -1,6 +1,9 @@
-import React from "react";
+// src/components/Leaderboard.js
 
-export default function Leaderboard({ leaderboard }) {
+"use client";
+import NextImage from 'next/image'; // Renamed import to avoid conflicts
+
+export default function LeaderboardComponent({ leaderboard }) { // Renamed to avoid name conflict with import
   if (leaderboard.length === 0) {
     return <p style={styles.noData}>No completions yet.</p>;
   }
@@ -8,12 +11,14 @@ export default function Leaderboard({ leaderboard }) {
   return (
     <div style={styles.container}>
       <ol style={styles.list}>
-        {leaderboard.map((user, index) => (
+        {leaderboard.map((user) => (
           <li key={user.user_id} style={styles.listItem}>
             {/* Avatar */}
-            <img
-              src={user.user_picture}
-              alt={user.user_name}
+            <NextImage
+              src={user.user_picture || "https://via.placeholder.com/40"}
+              alt={`${user.user_name}'s avatar`}
+              width={40}
+              height={40}
               style={styles.avatar}
             />
             {/* User Info */}
@@ -30,12 +35,12 @@ export default function Leaderboard({ leaderboard }) {
   );
 }
 
+
 const styles = {
   container: {
     padding: "1px",
     borderRadius: "8px",
     maxWidth: "500px",
-    margin: "3px auto",
   },
   noData: {
     color: "#ddd",

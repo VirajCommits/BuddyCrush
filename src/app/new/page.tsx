@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import CreateGroup from "../../components/CreateGroup";
 import axios from "axios";
 
 export default function NewGroupPage() {
   const [isCreating, setIsCreating] = useState(false);
+  const router = useRouter();
 
   const handleCreateGroup = async (newGroupData: { name: string; description: string }) => {
     if (isCreating) return;
@@ -19,7 +21,8 @@ export default function NewGroupPage() {
         { withCredentials: true }
       );
       alert(response.data.message || "Group created successfully!");
-    } catch (error) {
+      router.push("/profile"); // Redirect to Profile Page
+    } catch (error: unknown) {
       console.error("Error creating group:", error);
       if (axios.isAxiosError(error) && error.response?.data?.error) {
         alert(`Failed to create group: ${error.response.data.error}`);
@@ -34,8 +37,24 @@ export default function NewGroupPage() {
   return (
     <div style={styles.pageContainer}>
       <div style={styles.header}>
-        <button style={styles.backButton} onClick={() => window.history.back()}>
-          &lt; BACK
+        <button
+          style={styles.backButton}
+          onClick={() => router.back()}
+          aria-label="Go Back"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={styles.backIcon}
+          >
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
         </button>
         <h1 style={styles.pageHeading}>Create a New Group</h1>
       </div>
@@ -55,32 +74,41 @@ export default function NewGroupPage() {
 
 const styles: { [key: string]: React.CSSProperties } = {
   pageContainer: {
-    maxWidth: "600px",
-    margin: "50px auto",
-    padding: "20px",
+    width: "100vw",
+    height: "100vh",
+    display: "flex",
+    flexDirection: "column",
     backgroundColor: "#1e1e2f", // Aesthetic blueish-purple background
     color: "#fff",
-    borderRadius: "12px",
-    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
-    textAlign: "center",
+    padding: "40px 20px",
+    boxSizing: "border-box",
     fontFamily: "Arial, sans-serif",
   },
   header: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: "20px",
+    marginBottom: "40px",
   },
   backButton: {
     background: "none",
     border: "none",
-    color: "#aaa",
-    fontSize: "16px",
+    padding: "5px",
     cursor: "pointer",
-    fontWeight: "bold",
+    display: "flex",
+    alignItems: "center",
+    transition: "transform 0.2s",
+    marginRight: "15px",
+  },
+  backButtonHover: {
+    transform: "scale(1.1)",
+  },
+  backIcon: {
+    width: "24px",
+    height: "24px",
+    stroke: "#fff",
   },
   pageHeading: {
-    fontSize: "24px",
+    fontSize: "28px",
     fontWeight: "bold",
     textAlign: "center",
     flex: 1,
@@ -88,14 +116,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#fff",
   },
   subHeading: {
-    fontSize: "16px",
+    fontSize: "18px",
     color: "#ccc",
     marginBottom: "30px",
+    textAlign: "center",
   },
   footerNote: {
     fontSize: "14px",
     color: "#aaa",
-    marginTop: "20px",
+    marginTop: "auto",
+    textAlign: "center",
     fontStyle: "italic",
   },
 };

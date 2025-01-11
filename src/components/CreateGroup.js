@@ -1,32 +1,57 @@
-// src/components/CreateGroup.js
-
 "use client";
 
 import React, { useState } from "react";
 
 const formStyles = {
   container: {
-    padding: "20px",
-    maxWidth: "600px",
+    padding: "40px", // Increased padding for more space
+    maxWidth: "800px", // Increased width for a larger form
     margin: "auto",
     backgroundColor: "#1c1c1c",
-    borderRadius: "10px",
+    borderRadius: "15px", // Slightly larger border radius for a softer look
     color: "#fff",
+    boxSizing: "border-box",
+    textAlign: "center",
+  },
+  heading: {
+    fontSize: "36px", // Larger font size for the heading
+    fontWeight: "bold",
+    marginBottom: "30px",
   },
   input: {
     width: "100%",
-    padding: "8px",
-    marginBottom: "10px",
-    borderRadius: "5px",
+    padding: "15px 20px", // Larger padding for bigger fields
+    fontSize: "18px", // Bigger font size for better readability
+    marginBottom: "20px",
+    borderRadius: "8px", // Rounded edges
     border: "1px solid #ccc",
+    boxSizing: "border-box",
+  },
+  textarea: {
+    width: "100%",
+    padding: "15px 20px", // Larger padding for bigger text area
+    fontSize: "18px", // Bigger font size for better readability
+    marginBottom: "30px",
+    borderRadius: "8px",
+    border: "1px solid #ccc",
+    boxSizing: "border-box",
+    resize: "vertical",
   },
   button: {
-    padding: "10px 20px",
+    width: "100%",
+    padding: "15px 0", // Taller button
     backgroundColor: "#28a745",
     color: "#fff",
     border: "none",
-    borderRadius: "5px",
+    borderRadius: "8px",
     cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "20px", // Larger font size for button text
+    boxSizing: "border-box",
+    transition: "background-color 0.3s ease",
+  },
+  buttonHover: {
+    backgroundColor: "#218838", // Slightly darker green on hover
   },
 };
 
@@ -65,7 +90,7 @@ export default function CreateGroup({ onCreate }) {
 
   return (
     <div style={formStyles.container}>
-      <h2>Create a Group</h2>
+      <h2 style={formStyles.heading}>Create a Group</h2>
       <input
         style={formStyles.input}
         type="text"
@@ -75,7 +100,7 @@ export default function CreateGroup({ onCreate }) {
         disabled={isSubmitting}
       />
       <textarea
-        style={formStyles.input}
+        style={formStyles.textarea}
         placeholder="What would people gain by joining your group? What should they do?"
         value={description}
         onChange={(e) => setDescription(e.target.value)}

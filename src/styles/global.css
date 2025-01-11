@@ -1,13 +1,24 @@
-body {
-  font-family: Arial, sans-serif;
-  line-height: 1.6;
+/* globals.css */
+
+html, body, #__next {
   margin: 0;
-  padding: 20px;
+  padding: 0;
+  height: 100%; /* Full height */
+  width: 100%; /* Full width */
+  background-image: url('/background.jpg'); /* Replace with your image path */
+  background-size: cover; /* Scale the image to cover the viewport */
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Prevent image repetition */
+  /* Optional: Add a fallback background color */
+  background-color: #1e1e2f;
+  box-sizing: border-box;
+  /* Remove overflow:hidden unless necessary */
+  /* overflow: hidden; */
 }
 
 h1 {
   font-size: 2rem;
-  color: #333;
+  color: #fff; /* Adjusted for better contrast against dark background */
 }
 
 button {

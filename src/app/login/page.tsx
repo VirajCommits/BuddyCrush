@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <div style={styles.container}>
       <div style={styles.loginBox}>
-        <h1 style={styles.heading}>Welcome to Pal Crush</h1>
+        <h1 style={styles.heading}>Lets get you signed in!</h1>
         <p style={styles.subheading}>Log in with your Google account to get started</p>
         <a href="http://localhost:5000/api/google/login">
           <button style={styles.loginButton}>Log In with Google</button>

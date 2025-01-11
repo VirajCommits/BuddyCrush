@@ -1,25 +1,27 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Image from 'next/image'; // Import Image from next/image
 import socket from "../../../utils/socket"; // Singleton socket instance
 
 type Message = {
-  user: string; 
+  user: string;
   message: string;
-  picture: string;
+  user_image: string;
 };
 
 export default function GroupChatPage() {
   const params = useParams();
-  const groupId = params.groupId; 
+  const router = useRouter();
+  const groupId = params?.groupId?.toString() || "0";
 
-  const [currentUserName, setcurrentUserName] = useState("");
+  const [currentUserName, setCurrentUserName] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [groupName, setGroupName] = useState(`Group #${groupId}`);
-  const [error, setError] = useState("");
-
+  const [groupDescription, setGroupDescription] = useState("");
+  const [, setError] = useState("");
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -31,15 +33,34 @@ export default function GroupChatPage() {
           throw new Error("Failed to fetch user profile");
         }
         const data = await res.json();
-        setcurrentUserName(data.user.name);
+        setCurrentUserName(data.user.name);
       } catch (err: any) {
         console.error("Error fetching user profile:", err);
         setError(err.message || "Error fetching user profile");
       }
     };
 
+    const fetchGroupDescription = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/groups/discover", {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error("Failed to fetch groups");
+        }
+        const data = await res.json();
+        const group = data.groups.find((g: any) => g.id === parseInt(groupId));
+        console.log(group)
+        setGroupDescription(group ? group.name : `Group #${groupId}`);
+      } catch (err: any) {
+        console.error("Error fetching group description:", err);
+        setError(err.message || "Error fetching group description");
+      }
+    };
+
     fetchUserProfile();
-  }, []);
+    fetchGroupDescription();
+  }, [groupId]);
 
   useEffect(() => {
     const handleIncomingMessage = (data: Message) => {
@@ -58,14 +79,16 @@ export default function GroupChatPage() {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/groups/${groupId}/messages`, {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `http://localhost:5000/api/groups/${groupId}/messages`,
+          {
+            credentials: "include",
+          }
+        );
         if (!res.ok) {
           throw new Error("Failed to fetch group messages");
         }
         const data = await res.json();
-        console.log(data.messages)
         setMessages(data.messages || []);
       } catch (err: any) {
         console.error("Error fetching messages:", err);
@@ -80,12 +103,15 @@ export default function GroupChatPage() {
     if (!newMessage.trim()) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/groups/${groupId}/send-message`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ message: newMessage }),
-      });
+      const res = await fetch(
+        `http://localhost:5000/api/groups/${groupId}/send-message`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ message: newMessage }),
+        }
+      );
       if (!res.ok) {
         throw new Error("Failed to send message");
       }
@@ -96,26 +122,45 @@ export default function GroupChatPage() {
     }
   };
 
-  if (error) {
-    return <div style={styles.error}>Error: {error}</div>;
-  }
-
   return (
     <div style={styles.page}>
+      <header style={styles.header}>
+        <button style={styles.backButton} onClick={() => router.back()} aria-label="Go Back">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={styles.backIcon}
+          >
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <h2 style={styles.groupName}>{groupDescription}</h2>
+      </header>
 
       <div style={styles.chatContainer}>
         <div style={styles.messagesBox}>
+          {messages.length === 0 && (
+            <div style={styles.placeholder}>Be the first to write a message!</div>
+          )}
           {messages.map((msg, index) => {
             const isMine = msg.user === currentUserName;
 
             return (
               <div key={index} style={isMine ? styles.rowRight : styles.rowLeft}>
                 {!isMine && (
-                  <img
-                  src={msg.user_image}
-                  alt="Avatar"
-                  style={isMine ? styles.avatarRight : styles.avatarLeft}
-                />
+                  <Image
+                    src={msg.user_image || "https://via.placeholder.com/40"}
+                    alt={`${msg.user}'s avatar`}
+                    width={40}
+                    height={40}
+                    style={styles.avatarLeft}
+                  />
                 )}
 
                 <div style={isMine ? styles.bubbleRight : styles.bubbleLeft}>
@@ -123,11 +168,13 @@ export default function GroupChatPage() {
                 </div>
 
                 {isMine && (
-                  <img
-                  src={msg.user_image || "https://imgs.search.brave.com/liVtoLQ1_sNYI7Hysr17zleeDN-50DQTD93nqhHCfiE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTMz/MjEwMDkxOS92ZWN0/b3IvbWFuLWljb24t/YmxhY2staWNvbi1w/ZXJzb24tc3ltYm9s/LmpwZz9zPTYxMng2/MTImdz0wJms9MjAm/Yz1BVlZKa3Z4UVFD/dUJoYXdIclVoRFJU/Q2VOUTNKZ3QwSzF0/WGpKc0Z5MWVnPQ"}
-                  alt="Avatar"
-                  style={isMine ? styles.avatarRight : styles.avatarLeft}
-                />
+                  <Image
+                    src={msg.user_image || "https://via.placeholder.com/40"}
+                    alt={`${msg.user}'s avatar`}
+                    width={40}
+                    height={40}
+                    style={styles.avatarRight}
+                  />
                 )}
               </div>
             );
@@ -153,21 +200,43 @@ export default function GroupChatPage() {
 
 const styles: { [key: string]: React.CSSProperties } = {
   page: {
-    height: "100vh", // Full screen height
+    minHeight: "100vh",
+    height: "100%",
+    width: "100vw",
+    margin: "0",
+    padding: "0",
     display: "flex",
     flexDirection: "column",
-    backgroundColor: "#1e1e2f", // Aesthetic blueish-purple background
+    backgroundColor: "#1e1e2f",
     color: "#fff",
     fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
   },
   header: {
     padding: "20px",
-    backgroundColor: "#2a2a3b", // Slightly darker for contrast
+    backgroundColor: "#2a2a3b",
     display: "flex",
-    justifyContent: "space-between",
     alignItems: "center",
     color: "#fff",
     boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
+  },
+  backButton: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "0",
+    marginRight: "15px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "transform 0.2s",
+  },
+  backButtonHover: {
+    transform: "scale(1.1)",
+  },
+  backIcon: {
+    width: "24px",
+    height: "24px",
   },
   groupName: {
     margin: 0,
@@ -183,12 +252,18 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   messagesBox: {
     flex: 1,
-    overflowY: "scroll", // Enable scrolling
+    overflowY: "auto",
     marginBottom: "20px",
-    padding: "10px 10px",
+    padding: "10px",
     backgroundColor: "#2a2a3b",
     borderRadius: "8px",
     boxShadow: "inset 0 2px 5px rgba(0,0,0,0.1)",
+  },
+  placeholder: {
+    textAlign: "center",
+    color: "#aaa",
+    fontStyle: "italic",
+    marginTop: "20px",
   },
   rowLeft: {
     display: "flex",
@@ -196,12 +271,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: "10px",
   },
   avatarLeft: {
-    width: "40px",
-    height: "40px",
     borderRadius: "50%",
     marginRight: "10px",
     objectFit: "cover",
-    border: "2px solid #007bff",
   },
   bubbleLeft: {
     backgroundColor: "#2e3a4b",
@@ -218,12 +290,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: "10px",
   },
   avatarRight: {
-    width: "40px",
-    height: "40px",
     borderRadius: "50%",
     marginLeft: "10px",
     objectFit: "cover",
-    border: "2px solid #2a2a3b",
   },
   bubbleRight: {
     backgroundColor: "#007bff",
@@ -236,10 +305,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   inputRow: {
     display: "flex",
     gap: "10px",
-    backgroundColor: "#2a2a3b",
     padding: "10px",
-    borderRadius: "8px",
-    boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
   },
   input: {
     flex: 1,
@@ -260,6 +326,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: "bold",
     fontSize: "16px",
     cursor: "pointer",
-    transition: "background-color 0.3s ease",
+    transition: "background-color 0.2s",
   },
 };

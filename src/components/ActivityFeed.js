@@ -1,4 +1,5 @@
 import React from "react";
+import NextImage from 'next/image'; // Added import
 
 export default function ActivityFeed({ activity = [] }) {
   if (!Array.isArray(activity) || activity.length === 0) {
@@ -11,9 +12,11 @@ export default function ActivityFeed({ activity = [] }) {
         {activity.map((item, index) => (
           <li key={index} style={styles.listItem}>
             {/* Avatar */}
-            <img
-              src={item.user_picture}
-              alt={item.user_name}
+            <NextImage
+              src={item.user_picture || "https://via.placeholder.com/40"}
+              alt={`${item.user_name}'s avatar`}
+              width={40}
+              height={40}
               style={styles.avatar}
             />
             {/* User Info */}
@@ -55,11 +58,10 @@ const styles = {
     padding: "10px",
   },
   avatar: {
-    width: "40px",
-    height: "40px",
     borderRadius: "50%",
+    objectFit: "cover",
     marginRight: "10px",
-    objectFit: "cover", // Ensure the image fits within the avatar
+    border: "2px solid #444",
   },
   userInfo: {
     display: "flex",
@@ -69,7 +71,7 @@ const styles = {
     fontWeight: "600",
     fontSize: "14px",
     color: "#fff",
-    marginBottom: "3px", // Added spacing between name and time
+    marginBottom: "3px",
   },
   completed: {
     fontSize: "12px",

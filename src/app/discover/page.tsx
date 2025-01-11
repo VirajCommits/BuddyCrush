@@ -7,8 +7,24 @@ export default function DiscoverGroupsPage() {
   return (
     <div style={styles.pageContainer}>
       <div style={styles.header}>
-        <button style={styles.backButton} onClick={() => history.back()}>
-          &lt; BACK
+        <button
+          style={styles.backButton}
+          onClick={() => history.back()}
+          aria-label="Go Back"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="#7C83FD"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={styles.backIcon}
+          >
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
         </button>
         <h1 style={styles.heading}>Discover accountability groups</h1>
       </div>
@@ -32,15 +48,30 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: "20px",
   },
   backButton: {
-    background: "#fff",
+    display: "flex",
+    alignItems: "center",
+    background: "none",
     border: "none",
-    color: "#7C83FD", // Subtle blue for the back button
     cursor: "pointer",
+    padding: "10px 15px",
     fontSize: "16px",
     fontWeight: "bold",
-    padding: "0",
-    marginRight: "10px",
-    textDecoration: "underline",
+    color: "#7C83FD", // Subtle blue for the back button
+    textDecoration: "none",
+    transition: "transform 0.2s, color 0.2s",
+  },
+  backButtonHover: {
+    transform: "scale(1.05)",
+    color: "#A1A8FF", // Slightly lighter blue on hover
+  },
+  backIcon: {
+    marginRight: "0px",
+    transition: "stroke 0.2s",
+  },
+  backText: {
+    fontSize: "16px",
+    fontWeight: "bold",
+    transition: "color 0.2s",
   },
   heading: {
     fontSize: "32px",
