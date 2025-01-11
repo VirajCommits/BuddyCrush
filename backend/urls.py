@@ -1,6 +1,6 @@
 # urls.py
 
-from views import (
+from backend.views import (
     discover_groups,
     send_message_to_group,
     get_messages,
