@@ -5,9 +5,9 @@ from flask_migrate import Migrate
 import os
 from dotenv import load_dotenv
 
-from extensions import db
-from socketio_instance import socketio
-from urls import setup_routes
+from backend.extensions import db
+from backend.socketio_instance import socketio
+from backend.urls import setup_routes
 
 # Load environment variables from .env
 load_dotenv()
