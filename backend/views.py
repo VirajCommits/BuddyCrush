@@ -106,7 +106,7 @@ def google_callback():
     session["user"] = users[email]
     print("This is the session:" , session)
 
-    return redirect("http://localhost:3000/profile")
+    return redirect("https://pal-crush-2c20ca197e75.herokuapp.com/profile")
 
 def logout():
     session.clear()
