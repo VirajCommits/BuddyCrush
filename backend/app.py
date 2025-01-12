@@ -61,7 +61,7 @@ CORS(
 
 # Cookie settings for secure cross-origin cookies
 app.config.update(
-    SESSION_COOKIE_SECURE=False,   # True in production with HTTPS
+    SESSION_COOKIE_SECURE=True,   # True in production with HTTPS
     SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript from accessing cookies
     SESSION_COOKIE_SAMESITE="None", # Required for cross-origin cookies
 )
