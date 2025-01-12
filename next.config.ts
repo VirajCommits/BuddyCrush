@@ -1,14 +1,11 @@
-// next.config.ts
-import { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   images: {
     domains: [
-      'lh3.googleusercontent.com', // Google profile picture domain
-      'via.placeholder.com',       // Placeholder images
+      'lh3.googleusercontent.com',
+      'googleusercontent.com',
+      'via.placeholder.com',
     ],
   },
-  output: "export", // Required for static export
   reactStrictMode: true, // Enable strict mode
 };
 
