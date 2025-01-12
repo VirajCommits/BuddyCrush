@@ -37,13 +37,25 @@ app.config["SESSION_PERMANENT"] = True
 db.init_app(app)
 migrate = Migrate(app, db)  # Use Flask-Migrate for schema changes
 
-# Socket.IO configuration
-socketio.init_app(app, cors_allowed_origins="http://localhost:3000")
+socketio.init_app(
+    app,
+    cors_allowed_origins=[
+        "http://localhost:3000",
+        "https://pal-crush-2c20ca197e75.herokuapp.com"
+    ]
+)
 
 # CORS Configuration
 CORS(
     app,
-    resources={r"/api/*": {"origins": "http://localhost:3000"}},
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://localhost:3000",
+                "https://pal-crush-2c20ca197e75.herokuapp.com"
+            ]
+        }
+    },
     supports_credentials=True,
 )
 
