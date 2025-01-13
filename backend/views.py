@@ -105,8 +105,8 @@ def google_callback():
 
     session["user"] = users[email]
     print("This is the session:" , session)
+    return redirect("https://buddy-board-88fd54c902d8.herokuapp.com/profile")
 
-    return redirect("https://pal-crush-2c20ca197e75.herokuapp.com/profile")
 
 def logout():
     session.clear()

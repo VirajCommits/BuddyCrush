@@ -26,7 +26,7 @@ export default function GroupChatPage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const res = await fetch("https://buddy-board-88fd54c902d8.herokuapp.com/api/profile", {
+        const res = await fetch("/api/profile", {
           credentials: "include",
         });
         if (!res.ok) {
@@ -42,7 +42,7 @@ export default function GroupChatPage() {
 
     const fetchGroupDescription = async () => {
       try {
-        const res = await fetch("https://buddy-board-88fd54c902d8.herokuapp.com/api/groups/discover", {
+        const res = await fetch("/api/groups/discover", {
           credentials: "include",
         });
         if (!res.ok) {
@@ -80,7 +80,7 @@ export default function GroupChatPage() {
     const fetchMessages = async () => {
       try {
         const res = await fetch(
-          `https://buddy-board-88fd54c902d8.herokuapp.com/api/groups/${groupId}/messages`,
+          `/api/groups/${groupId}/messages`,
           {
             credentials: "include",
           }
@@ -104,7 +104,7 @@ export default function GroupChatPage() {
 
     try {
       const res = await fetch(
-        `https://buddy-board-88fd54c902d8.herokuapp.com/api/groups/${groupId}/send-message`,
+        `/api/groups/${groupId}/send-message`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

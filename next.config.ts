@@ -1,3 +1,4 @@
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     domains: [
@@ -6,7 +7,19 @@ const nextConfig = {
       'via.placeholder.com',
     ],
   },
-  reactStrictMode: true, // Enable strict mode
+  reactStrictMode: true,
+
+  // 1) Add the async rewrites() function below
+  async rewrites() {
+    return [
+      {
+        // 2) All requests to /api/... on the FE
+        //    should be sent to your BE app
+        source: '/api/:path*',
+        destination: 'https://buddy-board-88fd54c902d8.herokuapp.com/api/:path*',
+      },
+    ];
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

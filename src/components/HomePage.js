@@ -14,7 +14,7 @@ export default function HomePage() {
     const fetchData = async () => {
       try {
         // Fetch the logged-in user's profile
-        const profileResponse = await fetch("https://buddy-board-88fd54c902d8.herokuapp.com/api/profile", {
+        const profileResponse = await fetch("/api/profile", {
           credentials: "include",
         });
         const profileData = await profileResponse.json();

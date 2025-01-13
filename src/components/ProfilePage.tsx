@@ -31,7 +31,7 @@ export default function ProfilePage() {
     const fetchData = async () => {
       try {
         // 1) Fetch the logged-in user's profile
-        const profileResponse = await fetch("https://buddy-board-88fd54c902d8.herokuapp.com/api/profile", {
+        const profileResponse = await fetch("/api/profile", {
           credentials: "include",
         });
         if (!profileResponse.ok) {
@@ -41,7 +41,7 @@ export default function ProfilePage() {
         setUser(profileData.user); // e.g. { name, email, picture }
 
         // 2) Fetch all groups from /api/groups/discover
-        const groupsRes = await fetch("https://buddy-board-88fd54c902d8.herokuapp.com/api/groups/discover", {
+        const groupsRes = await fetch("/api/groups/discover", {
           credentials: "include",
         });
         if (!groupsRes.ok) {
@@ -77,7 +77,7 @@ export default function ProfilePage() {
    */
   const handleLogout = async () => {
     try {
-      const res = await fetch("https://buddy-board-88fd54c902d8.herokuapp.com/api/logout", {
+      const res = await fetch("/api/logout", {
         method: "POST",
         credentials: "include",
       });

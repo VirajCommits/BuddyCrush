@@ -47,7 +47,7 @@ export default function DiscoverGroups() {
     const fetchData = async () => {
       try {
         // 1) Fetch the logged-in user
-        const profileRes = await fetch("https://buddy-board-88fd54c902d8.herokuapp.com/api/profile", {
+        const profileRes = await fetch("/api/profile", {
           credentials: "include",
         });
         if (!profileRes.ok) {
