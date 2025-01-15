@@ -1,6 +1,6 @@
 # urls.py
 
-from backend.views import (
+from views import (
     discover_groups,
     send_message_to_group,
     get_messages,
@@ -12,6 +12,7 @@ from backend.views import (
     complete_activity,
     get_group_activity,
     get_leaderboard,
+    test_redis,
     profile
 )
 
@@ -29,6 +30,7 @@ def setup_routes(app):
         {"path": "/api/groups/<int:group_id>/complete", "view_func": complete_activity, "methods": ["POST"]},
         {"path": "/api/groups/<int:group_id>/leaderboard", "view_func": get_leaderboard, "methods": ["GET"]},
         {"path": "/api/groups/<int:group_id>/activity", "view_func": get_group_activity, "methods": ["GET"]},
+        {"path": "/test", "view_func": test_redis, "methods": ["POST" , "GET"]},
     ]
 
     for route in routes:

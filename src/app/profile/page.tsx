@@ -33,7 +33,7 @@ export default function Profile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get("https://buddy-board-88fd54c902d8.herokuapp.com/api/profile", {
+        const response = await axios.get("/api/profile", {
           withCredentials: true,
         });
         setUser(response.data.user);
@@ -51,7 +51,7 @@ export default function Profile() {
       if (!user) return;
 
       try {
-        const response = await axios.get("https://buddy-board-88fd54c902d8.herokuapp.com/api/groups/discover", {
+        const response = await axios.get("/api/groups/discover", {
           withCredentials: true,
         });
         const allGroups: Group[] = response.data.groups || [];
@@ -84,7 +84,7 @@ export default function Profile() {
 
   const handleLogout = async () => {
     try {
-      await axios.post("https://buddy-board-88fd54c902d8.herokuapp.com/api/logout", {}, { withCredentials: true });
+      await axios.post("/api/logout", {}, { withCredentials: true });
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);

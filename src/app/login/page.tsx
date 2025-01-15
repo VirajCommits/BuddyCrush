@@ -3,32 +3,26 @@
 import React from "react";
 
 export default function LoginPage() {
-  const handleLogin = () => {
-    window.location.href = "/api/google/login";
-
-  };
-
   return (
     <div style={styles.container}>
       <div style={styles.loginBox}>
-        <h1 style={styles.heading}>Let’s get you signed in!</h1>
+        <h1 style={styles.heading}>Lets get you signed in!</h1>
         <p style={styles.subheading}>Log in with your Google account to get started</p>
-
-        <button style={styles.loginButton} onClick={handleLogin}>
-          Log In with Google
-        </button>
+        <a href="http://127.0.0.1:5000/api/google/login">
+          <button style={styles.loginButton}>Log In with Google</button>
+        </a>
       </div>
     </div>
   );
 }
-
+ 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     height: "100vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#1e1e2f",
+    backgroundColor: "#1e1e2f", // Blueish-purple background
     color: "#fff",
     fontFamily: "Arial, sans-serif",
   },

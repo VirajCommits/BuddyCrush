@@ -2,13 +2,14 @@
 
 from flask import redirect, request, jsonify, session
 from flask_socketio import send, join_room, leave_room, emit
-from backend.socketio_instance import socketio  # Import the SocketIO instance
-from backend.models import Message
-from backend.extensions import db
+import redis
+from socketio_instance import socketio  # Import the SocketIO instance
+from models import Message
+from extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
-from backend.models import Group,GroupMember, User, UserActivity
+from models import Group,GroupMember, User, UserActivity
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date
 
@@ -105,8 +106,17 @@ def google_callback():
 
     session["user"] = users[email]
     print("This is the session:" , session)
-    return redirect("https://buddy-board-88fd54c902d8.herokuapp.com/profile")
+    # return redirect("https://buddy-board-88fd54c902d8.herokuapp.com/profile")
+    return redirect("http://localhost:3000/profile")
 
+def test_redis():
+    if request.method == "POST":
+        session["test_key"] = "test_value"
+        session.modified = True  # Ensure the session is marked as modified
+        print("This is session:" , session)
+        return jsonify({"message": "Session value set!"})
+    print("GET session:" , session)
+    return jsonify({"test_key": session.get("test_key", "Not set")})
 
 def logout():
     session.clear()

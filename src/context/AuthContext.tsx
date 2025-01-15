@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     axios
-      .get("https://buddy-board-88fd54c902d8.herokuapp.com/api/profile", { withCredentials: true })
+      .get("/api/profile", { withCredentials: true })
       .then((response) => {
         setIsAuthenticated(true);
         setUser(response.data.user);

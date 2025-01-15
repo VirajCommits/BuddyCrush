@@ -16,23 +16,11 @@ export default function Page() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    // Check if the user is authenticated
-    axios
-      .get("https://buddy-board-88fd54c902d8.herokuapp.com/api/profile", { withCredentials: true })
-      .then((response) => {
-        setIsAuthenticated(true);
-        setUser(response.data.user);
-      })
-      .catch(() => {
-        setIsAuthenticated(false);
-      });
-  }, []);
 
   const _ = async () => {
     try {
       await axios.post(
-        "https://buddy-board-88fd54c902d8.herokuapp.com/api/logout",
+        "/api/logout",
         {},
         { withCredentials: true }
       );

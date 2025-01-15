@@ -1,6 +1,7 @@
 import axios from "axios";
 const api = axios.create({
-  baseURL: "https://buddy-board-88fd54c902d8.herokuapp.com/api", 
+  // baseURL: "https://buddy-board-88fd54c902d8.herokuapp.com/api", 
+  baseURL: "http://localhost:3000/api", 
   withCredentials: true, // To send cookies for session management
 });
 export const fetchProfile = () => api.get("/profile");

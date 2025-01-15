@@ -14,7 +14,8 @@ export default function GroupChat({ groupId }) {
   useEffect(() => {
     // Initialize the socket
     if (!socketRef.current) {
-      socketRef.current = io("https://buddy-board-88fd54c902d8.herokuapp.com", {
+      // socketRef.current = io("https://buddy-board-88fd54c902d8.herokuapp.com", {
+      socketRef.current = io("http://localhost:3000", {
         transports: ["websocket"],
         reconnectionAttempts: 5,
       });

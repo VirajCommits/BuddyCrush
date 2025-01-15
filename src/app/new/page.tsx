@@ -16,7 +16,7 @@ export default function NewGroupPage() {
     console.log("handleCreateGroup called with:", newGroupData);
     try {
       const response = await axios.post(
-        "https://buddy-board-88fd54c902d8.herokuapp.com/api/groups/create",
+        "/api/groups/create",
         newGroupData,
         { withCredentials: true }
       );
