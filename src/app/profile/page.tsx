@@ -36,6 +36,8 @@ export default function Profile() {
         const response = await axios.get("/api/profile", {
           withCredentials: true,
         });
+        console.log("This is the response i get(users image link):" ,response.data.user.picture)
+
         setUser(response.data.user);
       } catch (err: any) {
         setError(err.response?.data?.error || "Failed to fetch profile");
@@ -73,6 +75,7 @@ export default function Profile() {
       const img = new Image();
       setTimeout(() => {
         img.src = user.picture;
+        console.log(img.src)
       }, 300); // Add a small delay
       img.onload = () => setLoading(false);
       img.onerror = () => {
@@ -108,7 +111,10 @@ export default function Profile() {
           <h1 style={styles.logoText}>Buddy Board</h1>
         </div>
         <div style={styles.userArea}>
-          {/* Replaced <img> with <NextImage> */}
+          {(() => {
+            console.log("user info:", user?.picture);
+            return null;
+          })()}
           <NextImage
             src={user?.picture || "https://via.placeholder.com/50"}
             alt={`${user?.name}'s avatar`}
@@ -170,7 +176,7 @@ export default function Profile() {
           ) : (
             <div style={styles.groupsGrid}>
               {joinedGroups.map((group) => (
-                <GroupCard key={group.id} group={group} />
+                <GroupCard key={group.id} group={group}  />
               ))}
             </div>
           )}

@@ -19,6 +19,7 @@ next_group_id = 1
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+print(GOOGLE_CLIENT_ID , GOOGLE_CLIENT_SECRET)
 GOOGLE_AUTH_URI = os.getenv("GOOGLE_AUTH_URI")
 GOOGLE_TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
@@ -54,6 +55,8 @@ def google_login():
     )
     return redirect(request_uri)
 
+# views.py
+
 def google_callback():
     code = request.args.get("code")
 
@@ -85,36 +88,55 @@ def google_callback():
     userinfo_response = requests.get(uri, headers=headers, data=body)
 
     user_info = userinfo_response.json()
-    email = user_info["email"]
-    name = user_info["name"]
+    email = user_info.get("email")
+    name = user_info.get("name")
     picture = user_info.get("picture")
 
-    if email not in users:
-        users[email] = {"name": name, "email": email, "picture": picture}
+    if not email:
+        return jsonify({"error": "Email not available from Google."}), 400
 
-    user = User.query.filter_by(email=user_info["email"]).first()
+    # Fetch or create the user in the database
+    user = User.query.filter_by(email=email).first()
     if not user:
-        # If user doesn't exist, create a new user
         user = User(
-            name=user_info["name"],
-            email=user_info["email"],
-            picture=user_info["picture"]
+            name=name,
+            email=email,
+            picture=picture
         )
         db.session.add(user)
         db.session.commit()
 
+    # Set session data directly
+    session["user"] = {
+        "name": user.name,
+        "email": user.email,
+        "picture": user.picture
+    }
+    session.permanent = True  # Optional: Makes the session permanent based on app config
 
-    session["user"] = users[email]
-    print("This is the session:" , session)
-    # return redirect("https://buddy-board-88fd54c902d8.herokuapp.com/profile")
-    return redirect("http://localhost:3000/profile")
+    print("Session before redirect:", dict(session))
+    print("Session Object:", session)
+    print("Session ID:", session.sid if hasattr(session, 'sid') else None)
 
+    return redirect("http://127.0.0.1:5000/profile")
+
+def profile():
+    print("This is the session(profile)-------------------------:" , session)
+    user = session.get("user")
+    print("This is the user:" , user)
+    if user:
+        return jsonify({"user": user})
+    return jsonify({"error": "Not logged in"}), 401
 def test_redis():
     if request.method == "POST":
         session["test_key"] = "test_value"
         session.modified = True  # Ensure the session is marked as modified
         print("This is session:" , session)
         return jsonify({"message": "Session value set!"})
+    else:
+        print("GET SESSION +++++++++++++++++++ :" , session)
+        return jsonify({"test_key": session.get("test_key", "Not set")})
+def get_redis():
     print("GET session:" , session)
     return jsonify({"test_key": session.get("test_key", "Not set")})
 
@@ -122,13 +144,9 @@ def logout():
     session.clear()
     return jsonify({"message": "Logged out successfully"})
 
-def profile():
-    print("This is the session(profile):" , session)
-    user = session.get("user")
-    print("This is the user:" , user)
-    if user:
-        return jsonify({"user": user})
-    return jsonify({"error": "Not logged in"}), 401
+def intro():
+    return jsonify({"Hey!": "Damn you found the Backend link!"})
+
 
 def create_group():
     global next_group_id
@@ -393,6 +411,7 @@ def send_message_to_group(group_id):
     db.session.commit()
 
     # Broadcast to all clients in the group room
+    print(socketio)
     socketio.emit(
         "group_message", 
         {"user": user["name"], "message": content , "user_image":user_picture}, 

@@ -13,7 +13,8 @@ from views import (
     get_group_activity,
     get_leaderboard,
     test_redis,
-    profile
+    profile,
+    get_redis,intro
 )
 
 def setup_routes(app):

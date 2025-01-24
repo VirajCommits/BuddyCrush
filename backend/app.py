@@ -1,61 +1,79 @@
-from flask import Flask
+# app.py
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_session import Session
 from flask_migrate import Migrate
 import os
 from dotenv import load_dotenv
-
+import redis
 from extensions import db
 from socketio_instance import socketio
 from urls import setup_routes
-import redis
-from redis import SSLConnection
 
-# Load environment variables from .env
 load_dotenv()
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # Dev only
 
-# Allow insecure transport for development (ONLY FOR DEVELOPMENT)
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+def create_app():
+    app = Flask(__name__, static_folder=None)
+    app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
 
-app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
+    # Database config
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
+    )
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Database configuration
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # Redis session config
+    app.config["SESSION_TYPE"] = "redis"
+    app.config["SESSION_REDIS"] = redis.from_url("redis://127.0.0.1:6379/0")
+    app.config["SESSION_PERMANENT"] = True
+    app.config["PERMANENT_SESSION_LIFETIME"] = 3600
+    app.config["SESSION_USE_SIGNER"] = True
+    app.config["SESSION_KEY_PREFIX"] = "session:"
 
-app.config["SESSION_TYPE"] = "redis"
-app.config["SESSION_REDIS"] = redis.from_url("redis://127.0.0.1:6379/0")  # Local Redis instance
-app.config["SESSION_PERMANENT"] = True
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="None",  # if you need cross-origin
+    )
 
-app.config["PERMANENT_SESSION_LIFETIME"] = 3600  # 1 hour
-app.config["SESSION_USE_SIGNER"] = True  # Sign session cookies
-app.config["SESSION_KEY_PREFIX"] = "session:"  # Prefix for Redis keys
+    db.init_app(app)
+    Migrate(app, db)
+    Session(app)
+
+    # Socket.IO
+    socketio.init_app(app, cors_allowed_origins="*")
+
+    # Register routes
+    setup_routes(app)
+
+    # Serve Next.js exported build from /out
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+    OUT_FOLDER = os.path.join(PROJECT_ROOT, "out")
+    print("This is the output folder:" , OUT_FOLDER)
+
+    @app.route("/")
+    def serve_index():
+        return send_from_directory(OUT_FOLDER, "index.html")
+
+    @app.route("/<path:path>")
+    def serve_static(path):
+        full_path = os.path.join(OUT_FOLDER, path)
+        if not os.path.isfile(full_path):
+            # If `profile.html` exists, serve that
+            possible_html = os.path.join(OUT_FOLDER, f"{path}.html")
+            if os.path.isfile(possible_html):
+                return send_from_directory(OUT_FOLDER, f"{path}.html")
+            # Otherwise fallback
+            return send_from_directory(OUT_FOLDER, "index.html")
+        return send_from_directory(OUT_FOLDER, path)
 
 
-db.init_app(app)
-migrate = Migrate(app, db)  # Use Flask-Migrate for schema changes
+    # Optionally enable CORS if needed
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
-# Socket.IO configuration
-socketio.init_app(app, cors_allowed_origins="http://localhost:3000")
-
-# CORS Configuration
-CORS(
-    app,
-    resources={r"/*": {"origins": "http://localhost:3000"}},
-    supports_credentials=True,
-)
-
-# Cookie settings for secure cross-origin cookies
-app.config.update(
-    SESSION_COOKIE_SECURE=False,   # True in production with HTTPS
-    SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript from accessing cookies
-    SESSION_COOKIE_SAMESITE="None", # Required for cross-origin cookies
-)
-Session(app)
-
-# Register REST API routes
-setup_routes(app)
+    return app
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app = create_app()
+    socketio.run(app, host="127.0.0.1", port=5000, debug=True)

@@ -12,7 +12,8 @@ import {
   fetchLeaderboard,
   fetchProfile,
 } from "../utils/api";
-import NextImage from 'next/image'; // Renamed import to avoid conflicts
+import NextImage from 'next/image'; // Import from 'next/image'
+import GroupChat from "./GroupChat"; // Import the GroupChat component
 
 export default function GroupCard({ group }) {
   const [activeTab, setActiveTab] = useState("activity");
@@ -21,18 +22,19 @@ export default function GroupCard({ group }) {
   const [loading, setLoading] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [activityData, setActivityData] = useState([]);
+  
+  // Controls visibility of the chat modal
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Check if the user has already completed the task today
   useEffect(() => {
     const checkCompletion = async () => {
       try {
         const response = await fetchActivityFeed(group.id);
-        const cur_user = (await fetchProfile()).data.user;
+        const curUser = (await fetchProfile()).data.user;
         const today = new Date().toISOString().split("T")[0];
         const hasCompletedToday = response.data.activity.some(
-          (item) => {
-            return item.completed_date === today && item.user_email === cur_user.email;
-          } 
+          (item) => item.completed_date === today && item.user_email === curUser.email
         );
         
         setAlreadyCompleted(hasCompletedToday);
@@ -42,7 +44,6 @@ export default function GroupCard({ group }) {
         setError("Failed to verify task completion.");
       }
     };
-
     checkCompletion();
   }, [group.id]);
 
@@ -57,30 +58,30 @@ export default function GroupCard({ group }) {
         setError("Failed to fetch leaderboard.");
       }
     };
-
     getLeaderboard();
   }, [group.id]);
 
+  // Handle "Complete Habit" button
   const handleCompleteHabit = async () => {
     setLoading(true);
     try {
       const data = await completeDailyTask(group.id);
-      console.log("This is the completed data:", data.message);
+      console.log("Completed data:", data);
+      const user_name = data.data.user_email; // Adjust if needed
       alert(data.message || "Habit completed successfully!");
       setAlreadyCompleted(true);
-      // Optionally, refresh activity and leaderboard data
+
+      // Optionally, refresh activity & leaderboard
       setActivityData((prev) => [
         ...prev,
         {
-          user_name: data.user_email, // Adjust based on your backend response
           user_picture: group.members.find(
-            (member) => member.email === data.user_email
-          )?.picture,
+            (member) => member.email === user_name
+          )?.user_image,
           completed_date: new Date().toISOString().split("T")[0],
           days_ago: 0,
         },
       ]);
-      // Update leaderboard count
       setLeaderboardData((prev) =>
         prev.map((user) =>
           user.user_email === data.user_email
@@ -98,9 +99,14 @@ export default function GroupCard({ group }) {
     }
   };
 
-  // Handle chat icon click
+  // Chat icon click => open chat modal
   const handleChatClick = () => {
-    window.location.href = `/group/${group.id}`;
+    setIsChatOpen(true);
+  };
+
+  // Close chat modal
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
   };
 
   return (
@@ -109,6 +115,7 @@ export default function GroupCard({ group }) {
       <div style={styles.topHeader}>
         <h3 style={styles.groupName}>{group.name}</h3>
       </div>
+
       <div style={styles.header}>
         <div style={styles.tabs}>
           <button
@@ -141,7 +148,7 @@ export default function GroupCard({ group }) {
         </div>
         <FaComments
           style={styles.chatIcon}
-          title="Go to Chat"
+          title="Open Chat"
           onClick={handleChatClick}
         />
       </div>
@@ -156,15 +163,10 @@ export default function GroupCard({ group }) {
         )}
         {activeTab === "about" && (
           <div style={styles.about}>
-            {/* Group Description */}
             <p style={styles.description}>{group.description}</p>
-
-            {/* Total Members */}
             <p style={styles.totalMembers}>
               {group.members.length} members
             </p>
-
-            {/* Members List */}
             <div style={styles.membersList}>
               {group.members.map((member) => (
                 <div key={member.email} style={styles.member}>
@@ -174,6 +176,9 @@ export default function GroupCard({ group }) {
                     width={30}
                     height={30}
                     style={styles.memberAvatar}
+                    onError={(e) => {
+                      e.target.src = "https://via.placeholder.com/30";
+                    }}
                   />
                   <span style={styles.memberName}>{member.name}</span>
                 </div>
@@ -201,16 +206,24 @@ export default function GroupCard({ group }) {
           ? "Completing🚀"
           : "Complete Habit 🚀🚀"}
       </button>
+
+      {/* Render GroupChat Modal if chat is open */}
+      {isChatOpen && (
+        <GroupChat
+          groupId={group.id}
+          onClose={handleCloseChat}
+        />
+      )}
     </div>
   );
 }
 
 /** 
- * Light Purplish Themed Inline Styles with Enhanced UI and Scrollable Sections
+ * Light Purplish Themed Inline Styles
  */
 const styles = {
   topHeader: {
-    marginBottom: "20px", // Space between the heading and tabs
+    marginBottom: "20px",
   },
   card: {
     backgroundColor: "#1c1c1c",
@@ -229,8 +242,8 @@ const styles = {
     marginBottom: "10px",
   },
   groupName: {
-    margin: "0",
-    color: "#fff", // Ensure group name is visible on dark background
+    margin: 0,
+    color: "#fff",
   },
   tabs: {
     display: "flex",
@@ -252,12 +265,12 @@ const styles = {
   content: {
     flex: 1,
     marginBottom: "10px",
-    overflowY: "auto", // Enable vertical scrolling
-    maxHeight: "350px", // Adjust based on your card's height
+    overflowY: "auto",
+    maxHeight: "350px",
   },
   about: {
     padding: "10px",
-    backgroundColor: "#2c2c2c",
+    backgroundColor: "#2c2c3b",
     borderRadius: "5px",
   },
   description: {
