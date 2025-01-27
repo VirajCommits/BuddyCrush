@@ -115,7 +115,7 @@ export default function Profile() {
           <div style={styles.userArea}>
             <img
               src={user.picture || "https://via.placeholder.com/40"}
-              alt={`${user.name} avatar`}
+              alt={`${user.name} avatars`}
               width={40}
               height={40}
               style={styles.headerAvatar}
