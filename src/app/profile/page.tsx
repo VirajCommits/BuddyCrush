@@ -126,7 +126,7 @@ export default function Profile() {
         <div style={styles.container}>
           {/* Profile Card */}
           <section style={styles.profileCard}>
-            <h2 style={styles.welcomeText}>Welcome, {user.name}!</h2>
+            <h2 style={styles.welcomeText}>Welcome , {user.name}!</h2>
             <img
               src={user.picture || "https://via.placeholder.com/140"}
               alt={`${user.name}'s avatar`}
