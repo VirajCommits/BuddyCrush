@@ -39,7 +39,7 @@ export default function GroupCard({ group }) {
         setAlreadyCompleted(habitStatus.data.completed); // API should return a boolean
       } catch (err) {
         console.error("Error fetching user or habit status:", err);
-        setError("Failed to fetch user or habit status.");
+        setError("Failed to fetch user or habit state.");
       }
     };
     fetchCurrentUserAndCheckCompletion();
