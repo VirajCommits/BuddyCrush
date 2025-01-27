@@ -1,90 +1,69 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import React, { CSSProperties, useEffect, useState } from "react";
 import axios from "axios";
-import GroupCard from "../../components/GroupCard";
 import { useRouter } from "next/navigation";
-import NextImage from 'next/image'; // Renamed import
+import GroupCard from "../../components/GroupCard";
 
-// Define the User type
 interface User {
   name: string;
   email: string;
   picture: string;
 }
 
-// Define the Group type based on your data structure
 interface Group {
   id: number;
   name: string;
   members: Array<{ email: string }>;
-  // Add other relevant fields if necessary
 }
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
+
+  // Separate loading state for joined groups only
   const [joinedGroups, setJoinedGroups] = useState<Group[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [joinedGroupsLoading, setJoinedGroupsLoading] = useState(true);
+
   const [error, setError] = useState("");
   const router = useRouter();
 
-  // Fetch user profile on mount
+  // 1) Fetch user profile (immediately displayed once loaded)
   useEffect(() => {
-    const fetchProfile = async () => {
+    (async () => {
       try {
         const response = await axios.get("/api/profile", {
           withCredentials: true,
         });
-        console.log("This is the response i get(users image link):" ,response.data.user.picture)
-
         setUser(response.data.user);
       } catch (err: any) {
         setError(err.response?.data?.error || "Failed to fetch profile");
       }
-    };
-
-    fetchProfile();
+    })();
   }, []);
 
-  // Fetch joined groups once user is fetched
+  // 2) Fetch joined groups (uses separate loading state)
   useEffect(() => {
-    const fetchJoinedGroups = async () => {
-      if (!user) return;
-
+    (async () => {
+      if (!user) return; // Wait until user is set
       try {
         const response = await axios.get("/api/groups/discover", {
           withCredentials: true,
         });
         const allGroups: Group[] = response.data.groups || [];
-        const joined = allGroups.filter((g: Group) =>
+        const joined = allGroups.filter((g) =>
           g.members.some((m) => m.email === user.email)
         );
         setJoinedGroups(joined);
       } catch (err) {
         console.error("Error fetching groups:", err);
+      } finally {
+        setJoinedGroupsLoading(false); // Stop skeleton in either success or fail
       }
-    };
-
-    fetchJoinedGroups();
+    })();
   }, [user]);
 
-  // Check if all required resources (data and images) are loaded
-  useEffect(() => {
-    if (user) {
-      const img = new Image();
-      setTimeout(() => {
-        img.src = user.picture;
-        console.log(img.src)
-      }, 300); // Add a small delay
-      img.onload = () => setLoading(false);
-      img.onerror = () => {
-        console.error("Error loading image");
-        setLoading(false);
-      };
-    }
-  }, [user]);
-
+  // Logout Handler
   const handleLogout = async () => {
     try {
       await axios.post("/api/logout", {}, { withCredentials: true });
@@ -95,253 +74,248 @@ export default function Profile() {
     }
   };
 
-  if (loading) {
-    return <div style={styles.loading}>Loading profile...</div>;
-  }
-
+  // Error State
   if (error) {
     return <div style={styles.errorMsg}>Error: {error}</div>;
   }
 
-  return (
-    <div style={styles.pageWrapper}>
-      {/* Top Bar / Header */}
-      <header style={styles.header}>
-        <div style={styles.logoArea}>
-          <h1 style={styles.logoText}>Buddy Board</h1>
-        </div>
-        <div style={styles.userArea}>
-          {(() => {
-            console.log("user info:", user?.picture);
-            return null;
-          })()}
-          <NextImage
-            src={user?.picture || "https://via.placeholder.com/50"}
-            alt={`${user?.name}'s avatar`}
-            width={50}
-            height={50}
-            style={styles.userAvatar}
-            onClick={handleLogout}
-            title="Logout"
-          />
-        </div>
-      </header>
-
-      <div style={styles.container}>
-        {/* Profile Card */}
-        <section style={styles.profileCard}>
-          <h2 style={styles.welcomeText}>Welcome, {user?.name}!</h2>
-          {/* Replaced <img> with <NextImage> */}
-          <NextImage
-            src={user?.picture || "https://via.placeholder.com/140"}
-            alt={`${user?.name}'s avatar`}
-            width={140}
-            height={140}
-            style={styles.avatar}
-          />
-          <p style={styles.emailText}>Email: {user?.email}</p>
-          <button onClick={handleLogout} style={styles.logoutButton}>
-            Log Out
-          </button>
-        </section>
-
-        {/* Create/Discover Groups Cards */}
-        <section style={styles.cardGrid}>
-          <div style={styles.card}>
-            <h3 style={styles.cardTitle}>Create Group</h3>
-            <p style={styles.cardDesc}>
-              Start a new accountability group to track your habits together!
-            </p>
-            <a href="/new" style={styles.actionButton}>
-              Create Group
-            </a>
-          </div>
-
-          <div style={styles.card}>
-            <h3 style={styles.cardTitle}>Discover Groups</h3>
-            <p style={styles.cardDesc}>
-              Join existing groups and find new buddies to crush your goals.
-            </p>
-            <a href="/discover" style={styles.actionButton}>
-              Discover Groups
-            </a>
-          </div>
-        </section>
-
-        {/* Display Joined Groups */}
-        <section style={styles.groupsSection}>
-          <h2 style={styles.subheading}>Your Joined Groups</h2>
-          {joinedGroups.length === 0 ? (
-            <p style={styles.noGroupsText}>You have not joined any groups.</p>
-          ) : (
-            <div style={styles.groupsGrid}>
-              {joinedGroups.map((group) => (
-                <GroupCard key={group.id} group={group}  />
-              ))}
-            </div>
-          )}
-        </section>
+  // If user not loaded yet, you could show a quick fallback:
+  if (!user) {
+    return (
+      <div style={styles.loadingWrapper}>
+        <p style={styles.loadingText}>Loading profile...</p>
       </div>
+    );
+  }
+
+  // ---------------------
+  // Actual Page Content
+  // ---------------------
+  return (
+    <>
+      {/* Only needed if you want a blinking effect for the skeleton */}
+      <style jsx global>{`
+        @keyframes blink {
+          0% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+          100% {
+            opacity: 1;
+          }
+        }
+      `}</style>
+
+      <div style={styles.pageWrapper}>
+        {/* Header */}
+        <header style={styles.header}>
+          <h1 style={styles.logoText}>Buddy Board</h1>
+          <div style={styles.userArea}>
+            <img
+              src={user.picture || "https://via.placeholder.com/40"}
+              alt={`${user.name} avatar`}
+              width={40}
+              height={40}
+              style={styles.headerAvatar}
+            />
+          </div>
+        </header>
+
+        <div style={styles.container}>
+          {/* Profile Card */}
+          <section style={styles.profileCard}>
+            <h2 style={styles.welcomeText}>Welcome, {user.name}!</h2>
+            <img
+              src={user.picture || "https://via.placeholder.com/140"}
+              alt={`${user.name}'s avatar`}
+              width={140}
+              height={140}
+              style={styles.avatar}
+            />
+            <p style={styles.emailText}>Email: {user.email}</p>
+            <button onClick={handleLogout} style={styles.logoutButton}>
+              Log Out
+            </button>
+          </section>
+
+          {/* Create/Discover Groups Cards */}
+          <section style={styles.cardRow}>
+            <div style={styles.card}>
+              <h3 style={styles.cardTitle}>Create Group</h3>
+              <p style={styles.cardDesc}>
+                Start a new accountability group to track your habits together!
+              </p>
+              <a href="/new" style={styles.actionButton}>
+                Create Group
+              </a>
+            </div>
+            <div style={styles.card}>
+              <h3 style={styles.cardTitle}>Discover Groups</h3>
+              <p style={styles.cardDesc}>
+                Join existing groups and find new buddies to crush your goals.
+              </p>
+              <a href="/discover" style={styles.actionButton}>
+                Discover Groups
+              </a>
+            </div>
+          </section>
+
+          {/* Joined Groups Section (with partial skeleton) */}
+          <section style={styles.groupsSection}>
+            <h2 style={styles.subheading}>Your Joined Groups</h2>
+            {joinedGroupsLoading ? (
+              <GroupsSkeleton />
+            ) : joinedGroups.length === 0 ? (
+              <p style={styles.noGroupsText}>You have not joined any groups.</p>
+            ) : (
+              <div style={styles.groupsGrid}>
+                {joinedGroups.map((group) => (
+                  <GroupCard key={group.id} group={group} />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* --------------------------------------------
+   Skeleton for the "Joined Groups" only
+-------------------------------------------- */
+function GroupsSkeleton() {
+  return (
+    <div style={styles.groupsGrid}>
+      {/* Render 2-3 skeleton group cards to mimic layout */}
+      {[...Array(2)].map((_, i) => (
+        <div key={i} style={styles.skeletonGroupCard} />
+      ))}
     </div>
   );
 }
 
-/** 
- * Dark-themed inline styles
- */
+/* --------------------------------------------
+   Dark-themed inline styles
+-------------------------------------------- */
 const styles: { [key: string]: CSSProperties } = {
-  errorMsg: {
-    color: "red",
-    textAlign: "center",
-    marginTop: "50px",
-  },
-  loading: {
-    color: "#fff",
-    textAlign: "center",
-    marginTop: "50px",
-    fontFamily: "sans-serif",
-    fontSize: "16px",
-  },
   pageWrapper: {
     minHeight: "100vh",
-    backgroundColor: "#1A1A1D", // Dark background
+    backgroundColor: "#121212",
     color: "#EAEAEA",
     display: "flex",
     flexDirection: "column",
     fontFamily: "'Roboto', sans-serif",
   },
   header: {
-    backgroundColor: "#29293D", // Darker header for contrast
+    backgroundColor: "#1B1B2F",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "20px 30px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
-  },
-  logoArea: {
-    // Add any specific styles if needed
+    padding: "16px 24px",
   },
   logoText: {
     fontSize: "1.8rem",
     fontWeight: "bold",
-    color: "#FFFFFF",
     margin: 0,
   },
   userArea: {
     display: "flex",
     alignItems: "center",
   },
-  userAvatar: {
-    width: "50px",
-    height: "50px",
+  headerAvatar: {
     borderRadius: "50%",
-    objectFit: "cover", // Ensure the image covers the container
-    border: "2px solid #555",
-    cursor: "pointer",
-    transition: "transform 0.3s, box-shadow 0.3s",
+    objectFit: "cover",
   },
   container: {
-    flex: 1,
     maxWidth: "1100px",
-    margin: "40px auto",
+    margin: "0 auto",
     padding: "20px",
     display: "flex",
     flexDirection: "column",
     gap: "30px",
   },
   profileCard: {
-    backgroundColor: "#2A2A40", // Slightly lighter card background
+    backgroundColor: "#1F1F3A",
     borderRadius: "12px",
     padding: "30px",
     textAlign: "center",
     boxShadow: "0 6px 12px rgba(0,0,0,0.3)",
-    color: "#EAEAEA",
   },
   welcomeText: {
-    fontSize: "2rem",
+    fontSize: "1.5rem",
     marginBottom: "20px",
     fontWeight: "bold",
   },
   avatar: {
+    borderRadius: "50%",
+    objectFit: "cover",
     width: "140px",
     height: "140px",
-    borderRadius: "50%",
-    margin: "20px 0",
-    objectFit: "cover",
-    border: "3px solid #444",
+    marginBottom: "20px",
   },
   emailText: {
-    margin: "10px 0 20px 0",
-    color: "#BBBBBB",
+    marginBottom: "20px",
+    color: "#ccc",
   },
   logoutButton: {
-    padding: "12px 24px",
+    padding: "10px 20px",
     backgroundColor: "#FF4B5C",
-    color: "#FFFFFF",
+    color: "#fff",
     border: "none",
     borderRadius: "8px",
     cursor: "pointer",
     fontWeight: "bold",
     transition: "background-color 0.3s ease",
   },
-  logoutButtonHover: {
-    backgroundColor: "#FF6E7A",
-  },
-  cardGrid: {
+  cardRow: {
     display: "flex",
-    flexWrap: "wrap",
     gap: "20px",
+    flexWrap: "wrap",
     justifyContent: "center",
   },
   card: {
-    backgroundColor: "#2A2A40",
+    backgroundColor: "#1F1F3A",
     borderRadius: "12px",
     padding: "20px",
     textAlign: "center",
     boxShadow: "0 6px 12px rgba(0,0,0,0.3)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    gap: "10px",
-    flex: "1 1 280px",
+    flex: "1 1 250px",
     maxWidth: "300px",
   },
   cardTitle: {
-    fontSize: "1.5rem",
+    fontSize: "1.2rem",
     fontWeight: "bold",
+    color: "#fff",
     marginBottom: "10px",
-    color: "#FFFFFF",
   },
   cardDesc: {
-    color: "#BBBBBB",
+    color: "#ccc",
     marginBottom: "15px",
     fontSize: "14px",
   },
   actionButton: {
-    padding: "12px 20px",
+    display: "inline-block",
+    padding: "10px 18px",
     backgroundColor: "#007BFF",
-    color: "#FFFFFF",
+    color: "#fff",
     borderRadius: "8px",
     textDecoration: "none",
     fontWeight: "bold",
     transition: "background-color 0.3s ease",
-    textAlign: "center",
-    cursor: "pointer",
-  },
-  actionButtonHover: {
-    backgroundColor: "#339CFF",
   },
   groupsSection: {
-    marginTop: "30px",
+    marginTop: "20px",
   },
   subheading: {
-    fontSize: "1.8rem",
-    marginBottom: "20px",
+    fontSize: "1.4rem",
+    marginBottom: "16px",
     fontWeight: "bold",
-    textAlign: "center",
   },
   noGroupsText: {
-    color: "#BBBBBB",
+    color: "#ccc",
     textAlign: "center",
     fontSize: "14px",
   },
@@ -349,5 +323,28 @@ const styles: { [key: string]: CSSProperties } = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
     gap: "20px",
+  },
+
+  // Skeleton placeholders for joined groups
+  skeletonGroupCard: {
+    backgroundColor: "#2A2A4A",
+    borderRadius: "10px",
+    height: "120px",
+    animation: "blink 1.2s ease-in-out infinite",
+  },
+
+  // Minimal loading fallback for user profile
+  loadingWrapper: {
+    minHeight: "100vh",
+    backgroundColor: "#121212",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#ccc",
+    fontSize: "1rem",
+    fontFamily: "sans-serif",
+    fontStyle: "italic",
   },
 };

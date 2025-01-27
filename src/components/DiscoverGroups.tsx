@@ -1,11 +1,11 @@
 // src/components/DiscoverGroups.tsx
+/* eslint-disable @next/next/no-img-element */
 
 "use client";
 
 import React, { useEffect, useState, useCallback, memo } from "react";
 import { fetchGroups, joinGroup } from "../utils/api";
 import { FaUsers } from "react-icons/fa";
-import NextImage from "next/image";
 
 type User = {
   email: string;
@@ -33,6 +33,7 @@ export default function DiscoverGroups() {
   const [joinedGroups, setJoinedGroups] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string>("");
   const [avatarSrcs, setAvatarSrcs] = useState<{ [key: number]: string }>({});
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Check if user joined a group
   const isJoined = useCallback(
@@ -44,6 +45,8 @@ export default function DiscoverGroups() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+
         // 1) Fetch logged-in user
         const profileRes = await fetch("/api/profile", {
           credentials: "include",
@@ -68,6 +71,8 @@ export default function DiscoverGroups() {
             .map((g: Group) => g.id);
           setJoinedGroups(new Set(joinedIds));
         }
+
+        setLoading(false);
       } catch (err: unknown) {
         console.error("Error fetching data:", err);
         if (err instanceof Error) {
@@ -75,6 +80,7 @@ export default function DiscoverGroups() {
         } else {
           setError("Failed to fetch data.");
         }
+        setLoading(false);
       }
     };
     fetchData();
@@ -103,6 +109,7 @@ export default function DiscoverGroups() {
     }));
   }, []);
 
+  // If there's an error
   if (error) {
     return (
       <div style={styles.errorMsg}>
@@ -111,21 +118,69 @@ export default function DiscoverGroups() {
     );
   }
 
+  // If loading, show skeleton loaders + loading text
+  if (loading) {
+    return (
+      <>
+        {/* Define global blinking keyframes here */}
+        <style jsx global>{`
+          @keyframes blink {
+            0% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.5;
+            }
+            100% {
+              opacity: 1;
+            }
+          }
+        `}</style>
+        <div style={styles.container}>
+          <div style={styles.loadingText}>Loading...</div>
+          <div style={styles.grid}>
+            {[...Array(6)].map((_, index) => (
+              <SkeletonCard key={index} />
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Once data is fetched, show actual data
   return (
-    <div style={styles.container}>
-      <div style={styles.grid}>
-        {groups.map((group) => (
-          <GroupItem
-            key={group.id}
-            group={group}
-            isJoined={isJoined}
-            handleJoin={handleJoin}
-            handleImageError={handleImageError}
-            avatarSrcs={avatarSrcs}
-          />
-        ))}
+    <>
+      {/* Keep keyframes global if you want them always available */}
+      <style jsx global>{`
+        @keyframes blink {
+          0% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+          100% {
+            opacity: 1;
+          }
+        }
+      `}</style>
+
+      <div style={styles.container}>
+        <div style={styles.grid}>
+          {groups.map((group) => (
+            <GroupItem
+              key={group.id}
+              group={group}
+              isJoined={isJoined}
+              handleJoin={handleJoin}
+              handleImageError={handleImageError}
+              avatarSrcs={avatarSrcs}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -160,9 +215,13 @@ const GroupItem = memo(function GroupItem({
 
       <div style={styles.avatars}>
         {group.members.slice(0, 5).map((member, index) => (
-          <NextImage
+          <img
             key={index}
-            src={avatarSrcs[group.id] || member.user_image || "https://via.placeholder.com/40"}
+            src={
+              avatarSrcs[group.id] ||
+              member.user_image ||
+              "https://via.placeholder.com/40"
+            }
             alt={`${member.name}'s avatar`}
             width={40}
             height={40}
@@ -182,10 +241,7 @@ const GroupItem = memo(function GroupItem({
           Joined
         </button>
       ) : (
-        <button
-          style={styles.joinButton}
-          onClick={() => handleJoin(group.id)}
-        >
+        <button style={styles.joinButton} onClick={() => handleJoin(group.id)}>
           Join
         </button>
       )}
@@ -193,6 +249,26 @@ const GroupItem = memo(function GroupItem({
   );
 });
 
+// ---------------------
+// Skeleton Card
+// ---------------------
+function SkeletonCard() {
+  return (
+    <div style={styles.skeletonCard}>
+      <div style={styles.skeletonHeader}>
+        <div style={styles.skeletonTitle} />
+        <div style={styles.skeletonSubtitle} />
+      </div>
+      <div style={styles.skeletonAvatars}>
+        <div style={styles.skeletonAvatar} />
+        <div style={styles.skeletonAvatar} />
+        <div style={styles.skeletonAvatar} />
+      </div>
+      <div style={styles.skeletonDescription} />
+      <div style={styles.skeletonButton} />
+    </div>
+  );
+}
 
 // ---------------------
 // Inline Styles
@@ -203,6 +279,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     maxWidth: "1200px",
     margin: "auto",
     fontFamily: "'Roboto', sans-serif",
+  },
+  loadingText: {
+    textAlign: "center",
+    marginBottom: "1rem",
+    fontSize: "1.2rem",
+    fontStyle: "italic",
+    color: "#444",
   },
   grid: {
     display: "grid",
@@ -218,6 +301,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: "column",
     justifyContent: "space-between",
     transition: "transform 0.3s, box-shadow 0.3s",
+    minHeight: "200px",
   },
   cardHeader: {
     marginBottom: "15px",
@@ -281,5 +365,62 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: "50px",
     fontSize: "1.2rem",
   },
-};
 
+  // Skeleton styles
+  skeletonCard: {
+    backgroundColor: "#eee",
+    overflow: "hidden",
+    position: "relative",
+    // Use the global blinking keyframes
+    animation: "blink 1s ease-in-out infinite",
+    borderRadius: "15px",
+    padding: "25px",
+    minHeight: "200px",
+    boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+  skeletonHeader: {
+    marginBottom: "15px",
+  },
+  skeletonTitle: {
+    width: "60%",
+    height: "20px",
+    backgroundColor: "#ddd",
+    borderRadius: "4px",
+    marginBottom: "10px",
+  },
+  skeletonSubtitle: {
+    width: "40%",
+    height: "15px",
+    backgroundColor: "#ddd",
+    borderRadius: "4px",
+  },
+  skeletonAvatars: {
+    display: "flex",
+    marginBottom: "15px",
+  },
+  skeletonAvatar: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    backgroundColor: "#ddd",
+    marginRight: "-10px",
+    border: "2px solid #fff",
+  },
+  skeletonDescription: {
+    width: "100%",
+    height: "40px",
+    backgroundColor: "#ddd",
+    borderRadius: "4px",
+    marginBottom: "20px",
+    flexGrow: 1,
+  },
+  skeletonButton: {
+    width: "30%",
+    height: "35px",
+    backgroundColor: "#ddd",
+    borderRadius: "8px",
+  },
+};

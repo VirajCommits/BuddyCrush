@@ -14,7 +14,8 @@ from views import (
     get_leaderboard,
     test_redis,
     profile,
-    get_redis,intro
+    get_redis,intro,
+    check_habit_completion
 )
 
 def setup_routes(app):
@@ -31,6 +32,7 @@ def setup_routes(app):
         {"path": "/api/groups/<int:group_id>/complete", "view_func": complete_activity, "methods": ["POST"]},
         {"path": "/api/groups/<int:group_id>/leaderboard", "view_func": get_leaderboard, "methods": ["GET"]},
         {"path": "/api/groups/<int:group_id>/activity", "view_func": get_group_activity, "methods": ["GET"]},
+        {"path": "/api/groups/<int:group_id>/check-habit", "view_func": check_habit_completion, "methods": ["GET"]},
         {"path": "/test", "view_func": test_redis, "methods": ["POST" , "GET"]},
     ]
 

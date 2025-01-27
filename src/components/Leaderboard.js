@@ -1,7 +1,6 @@
 // src/components/Leaderboard.js
-
+/* eslint-disable @next/next/no-img-element */
 "use client";
-import NextImage from 'next/image'; // Renamed import to avoid conflicts
 
 export default function LeaderboardComponent({ leaderboard }) { // Renamed to avoid name conflict with import
   if (leaderboard.length === 0) {
@@ -14,7 +13,7 @@ export default function LeaderboardComponent({ leaderboard }) { // Renamed to av
         {leaderboard.map((user) => (
           <li key={user.user_id} style={styles.listItem}>
             {/* Avatar */}
-            <NextImage
+            <img
               src={user.user_picture || "https://via.placeholder.com/40"}
               alt={`${user.user_name}'s avatar`}
               width={40}
@@ -25,7 +24,7 @@ export default function LeaderboardComponent({ leaderboard }) { // Renamed to av
             <div style={styles.userInfo}>
               <span style={styles.userName}>{user.user_name}</span>
               <span style={styles.completionCount}>
-                {user.completion_count} completions
+                {user.completion_count} completions Viraj
               </span>
             </div>
           </li>

@@ -1,5 +1,5 @@
 import React from "react";
-import NextImage from 'next/image'; // Added import
+/* eslint-disable @next/next/no-img-element */
 
 export default function ActivityFeed({ activity = [] }) {
   if (!Array.isArray(activity) || activity.length === 0) {
@@ -12,7 +12,7 @@ export default function ActivityFeed({ activity = [] }) {
         {activity.map((item, index) => (
           <li key={index} style={styles.listItem}>
             {/* Avatar */}
-            <NextImage
+            <img
               src={item.user_picture || "https://via.placeholder.com/40"}
               alt={`${item.user_name}'s avatar`}
               width={40}

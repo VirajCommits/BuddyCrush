@@ -50,7 +50,6 @@ def create_app():
     # Serve Next.js exported build from /out
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
     OUT_FOLDER = os.path.join(PROJECT_ROOT, "out")
-    print("This is the output folder:" , OUT_FOLDER)
 
     @app.route("/")
     def serve_index():

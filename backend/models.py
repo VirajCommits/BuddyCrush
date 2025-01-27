@@ -76,13 +76,17 @@ class GroupMember(db.Model):
             "profile_picture": self.user.picture
         }
 class UserActivity(db.Model):
+    __tablename__ = "user_activity"
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
     completed_date = db.Column(db.Date, nullable=False)
+    completed_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # new field
 
     user = db.relationship('User', backref='activities', lazy=True)
     group = db.relationship('Group', backref='activities', lazy=True)
+
 
 
 

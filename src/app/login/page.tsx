@@ -1,59 +1,64 @@
 "use client";
-
+/* eslint-disable react/no-unescaped-entities */
 import React from "react";
 
 export default function LoginPage() {
   return (
     <div style={styles.container}>
       <div style={styles.loginBox}>
-        <h1 style={styles.heading}>Lets get you signed in!</h1>
+        <h1 style={styles.heading}>Let's get you signed in!</h1>
         <p style={styles.subheading}>Log in with your Google account to get started</p>
-        <a href="http://127.0.0.1:5000/api/google/login">
+        <a href="http://127.0.0.1:5000/api/google/login" style={styles.link}>
           <button style={styles.loginButton}>Log In with Google</button>
         </a>
       </div>
     </div>
   );
 }
- 
+
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     height: "100vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#1e1e2f", // Blueish-purple background
+    // A subtle gradient background
+    background: "linear-gradient(135deg, #1e1e2f 0%, #1b1b2f 100%)",
     color: "#fff",
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "'Roboto', sans-serif",
   },
   loginBox: {
     width: "100%",
-    maxWidth: "400px",
+    maxWidth: "420px",
     backgroundColor: "#2a2a3b",
-    padding: "30px",
-    borderRadius: "8px",
-    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+    padding: "40px",
+    borderRadius: "10px",
+    boxShadow: "0 8px 20px rgba(0, 0, 0, 0.3)",
     textAlign: "center",
   },
   heading: {
-    fontSize: "24px",
+    fontSize: "2rem", // bigger heading
     fontWeight: "bold",
-    marginBottom: "10px",
+    marginBottom: "16px",
+    color: "#fff",
   },
   subheading: {
-    fontSize: "16px",
-    marginBottom: "20px",
-    color: "#aaa",
+    fontSize: "1.2rem",
+    marginBottom: "28px",
+    color: "#cccccc",
+  },
+  link: {
+    textDecoration: "none",
   },
   loginButton: {
-    padding: "10px 20px",
+    padding: "14px 28px",
     border: "none",
-    borderRadius: "5px",
+    borderRadius: "6px",
     backgroundColor: "#007bff",
     color: "#fff",
     fontWeight: "bold",
-    fontSize: "16px",
+    fontSize: "1rem",
     cursor: "pointer",
-    transition: "background-color 0.3s ease",
+    transition: "all 0.3s ease",
   },
 };

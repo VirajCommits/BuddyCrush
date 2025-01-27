@@ -1,5 +1,5 @@
 // src/components/GroupCard.js
-
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -11,40 +11,55 @@ import {
   fetchActivityFeed,
   fetchLeaderboard,
   fetchProfile,
-} from "../utils/api";
-import NextImage from 'next/image'; // Import from 'next/image'
-import GroupChat from "./GroupChat"; // Import the GroupChat component
+  checkHabitCompletion,
+} from "../utils/api"; // Import checkHabitCompletion API
+import GroupChat from "./GroupChat";
 
 export default function GroupCard({ group }) {
   const [activeTab, setActiveTab] = useState("activity");
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [activityData, setActivityData] = useState([]);
-  
-  // Controls visibility of the chat modal
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Check if the user has already completed the task today
+  // Fetch current user and check habit completion
   useEffect(() => {
-    const checkCompletion = async () => {
+    const fetchCurrentUserAndCheckCompletion = async () => {
       try {
-        const response = await fetchActivityFeed(group.id);
-        const curUser = (await fetchProfile()).data.user;
-        const today = new Date().toISOString().split("T")[0];
-        const hasCompletedToday = response.data.activity.some(
-          (item) => item.completed_date === today && item.user_email === curUser.email
-        );
-        
-        setAlreadyCompleted(hasCompletedToday);
-        setActivityData(response.data.activity);
+        const response = await fetchProfile();
+        const curUser = response.data.user;
+        setCurrentUserEmail(curUser.email);
+
+        // Check if the habit is already completed
+        const habitStatus = await checkHabitCompletion(group.id);
+        console.log(habitStatus)
+        setAlreadyCompleted(habitStatus.data.completed); // API should return a boolean
       } catch (err) {
-        console.error("Error checking completion:", err);
-        setError("Failed to verify task completion.");
+        console.error("Error fetching user or habit status:", err);
+        setError("Failed to fetch user or habit status.");
       }
     };
-    checkCompletion();
+    fetchCurrentUserAndCheckCompletion();
+  }, [group.id]);
+
+  // Fetch activity feed
+  useEffect(() => {
+    const fetchActivity = async () => {
+      setLoading(true);
+      try {
+        const response = await fetchActivityFeed(group.id);
+        setActivityData(response.data.activity);
+      } catch (err) {
+        console.error("Error fetching activity:", err);
+        setError("Failed to fetch activity feed.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchActivity();
   }, [group.id]);
 
   // Fetch leaderboard data
@@ -66,25 +81,25 @@ export default function GroupCard({ group }) {
     setLoading(true);
     try {
       const data = await completeDailyTask(group.id);
-      console.log("Completed data:", data);
-      const user_name = data.data.user_email; // Adjust if needed
       alert(data.message || "Habit completed successfully!");
       setAlreadyCompleted(true);
 
-      // Optionally, refresh activity & leaderboard
+      // Refresh activity feed
       setActivityData((prev) => [
         ...prev,
         {
           user_picture: group.members.find(
-            (member) => member.email === user_name
+            (member) => member.email === currentUserEmail
           )?.user_image,
           completed_date: new Date().toISOString().split("T")[0],
           days_ago: 0,
         },
       ]);
+
+      // Update leaderboard
       setLeaderboardData((prev) =>
         prev.map((user) =>
-          user.user_email === data.user_email
+          user.user_email === currentUserEmail
             ? { ...user, completion_count: user.completion_count + 1 }
             : user
         )
@@ -99,19 +114,12 @@ export default function GroupCard({ group }) {
     }
   };
 
-  // Chat icon click => open chat modal
-  const handleChatClick = () => {
-    setIsChatOpen(true);
-  };
-
-  // Close chat modal
-  const handleCloseChat = () => {
-    setIsChatOpen(false);
-  };
+  // Chat modal toggle handlers
+  const handleChatClick = () => setIsChatOpen(true);
+  const handleCloseChat = () => setIsChatOpen(false);
 
   return (
     <div style={styles.card}>
-      {/* Header with Group Name and Tabs */}
       <div style={styles.topHeader}>
         <h3 style={styles.groupName}>{group.name}</h3>
       </div>
@@ -153,45 +161,43 @@ export default function GroupCard({ group }) {
         />
       </div>
 
-      {/* Content Area */}
       <div style={styles.content}>
-        {activeTab === "activity" && (
-          <ActivityFeed activity={activityData} />
-        )}
-        {activeTab === "leaderboard" && (
-          <Leaderboard leaderboard={leaderboardData} />
-        )}
-        {activeTab === "about" && (
-          <div style={styles.about}>
-            <p style={styles.description}>{group.description}</p>
-            <p style={styles.totalMembers}>
-              {group.members.length} members
-            </p>
-            <div style={styles.membersList}>
-              {group.members.map((member) => (
-                <div key={member.email} style={styles.member}>
-                  <NextImage
-                    src={member.user_image || "https://via.placeholder.com/30"}
-                    alt={`${member.name}'s avatar`}
-                    width={30}
-                    height={30}
-                    style={styles.memberAvatar}
-                    onError={(e) => {
-                      e.target.src = "https://via.placeholder.com/30";
-                    }}
-                  />
-                  <span style={styles.memberName}>{member.name}</span>
+        {loading ? (
+          <div style={styles.loading}>Loading...</div>
+        ) : (
+          <>
+            {activeTab === "activity" && <ActivityFeed activity={activityData} />}
+            {activeTab === "leaderboard" && (
+              <Leaderboard leaderboard={leaderboardData} />
+            )}
+            {activeTab === "about" && (
+              <div style={styles.about}>
+                <p style={styles.description}>{group.description}</p>
+                <p style={styles.totalMembers}>
+                  {group.members.length} members
+                </p>
+                <div style={styles.membersList}>
+                  {group.members.map((member) => (
+                    <div key={member.email} style={styles.member}>
+                      <img
+                        src={member.user_image || "https://via.placeholder.com/30"}
+                        alt={`${member.name}'s avatar`}
+                        width={30}
+                        height={30}
+                        className="member-avatar"
+                      />
+                      <span style={styles.memberName}>{member.name}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Error Message */}
       {error && <div style={styles.error}>{error}</div>}
 
-      {/* Complete Habit Button */}
       <button
         onClick={handleCompleteHabit}
         style={{
@@ -203,20 +209,17 @@ export default function GroupCard({ group }) {
         {alreadyCompleted
           ? "Completed Today 🎉"
           : loading
-          ? "Completing🚀"
-          : "Complete Habit 🚀🚀"}
+          ? "Completing..."
+          : "Complete Habit 🚀"}
       </button>
 
-      {/* Render GroupChat Modal if chat is open */}
-      {isChatOpen && (
-        <GroupChat
-          groupId={group.id}
-          onClose={handleCloseChat}
-        />
-      )}
+      {isChatOpen && <GroupChat groupId={group.id} onClose={handleCloseChat} />}
     </div>
   );
 }
+
+// Styles remain unchanged from the original code
+
 
 /** 
  * Light Purplish Themed Inline Styles
@@ -329,5 +332,13 @@ const styles = {
   error: {
     color: "red",
     marginBottom: "10px",
+  },
+  loading: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    color: '#fff',
+    fontSize: '1.2rem',
   },
 };

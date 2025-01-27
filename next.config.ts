@@ -8,6 +8,7 @@ const nextConfig = {
       'via.placeholder.com',
     ],
   },
+  unoptimized: true,
   reactStrictMode: true,
 
   // Allows generating static HTML

@@ -1,6 +1,7 @@
 // src/components/GroupChat.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -160,16 +161,16 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, onClose }) => {
             return (
               <div key={index} style={isMine ? styles.rowRight : styles.rowLeft}>
                 {!isMine && (
-                  <Image
-                    src={msg.user_image || "https://via.placeholder.com/40"}
-                    alt={`${msg.user}'s avatar`}
-                    width={40}
-                    height={40}
-                    style={styles.avatarLeft}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/40";
-                    }}
-                  />
+                  <img
+                  src={msg.user_image || "https://via.placeholder.com/40"}
+                  alt={`${msg.user}'s avatar`}
+                  width={40}
+                  height={40}
+                  style={styles.avatarLeft}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/40";
+                  }}
+                />
                 )}
 
                 <div style={isMine ? styles.bubbleRight : styles.bubbleLeft}>
@@ -177,16 +178,16 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, onClose }) => {
                 </div>
 
                 {isMine && (
-                  <Image
-                    src={msg.user_image || "https://via.placeholder.com/40"}
-                    alt={`${msg.user}'s avatar`}
-                    width={40}
-                    height={40}
-                    style={styles.avatarRight}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/40";
-                    }}
-                  />
+                  <img
+                  src={msg.user_image || "https://via.placeholder.com/40"}
+                  alt={`${msg.user}'s avatar`}
+                  width={40}
+                  height={40}
+                  style={styles.avatarRight}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/40";
+                  }}
+                />
                 )}
               </div>
             );

@@ -19,7 +19,6 @@ next_group_id = 1
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-print(GOOGLE_CLIENT_ID , GOOGLE_CLIENT_SECRET)
 GOOGLE_AUTH_URI = os.getenv("GOOGLE_AUTH_URI")
 GOOGLE_TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
@@ -114,16 +113,10 @@ def google_callback():
     }
     session.permanent = True  # Optional: Makes the session permanent based on app config
 
-    print("Session before redirect:", dict(session))
-    print("Session Object:", session)
-    print("Session ID:", session.sid if hasattr(session, 'sid') else None)
-
     return redirect("http://127.0.0.1:5000/profile")
 
 def profile():
-    print("This is the session(profile)-------------------------:" , session)
     user = session.get("user")
-    print("This is the user:" , user)
     if user:
         return jsonify({"user": user})
     return jsonify({"error": "Not logged in"}), 401
@@ -131,13 +124,10 @@ def test_redis():
     if request.method == "POST":
         session["test_key"] = "test_value"
         session.modified = True  # Ensure the session is marked as modified
-        print("This is session:" , session)
         return jsonify({"message": "Session value set!"})
     else:
-        print("GET SESSION +++++++++++++++++++ :" , session)
         return jsonify({"test_key": session.get("test_key", "Not set")})
 def get_redis():
-    print("GET session:" , session)
     return jsonify({"test_key": session.get("test_key", "Not set")})
 
 def logout():
@@ -159,7 +149,6 @@ def create_group():
     user_name = user["name"]
 
     data = request.get_json()
-    print("This is the data i get:" , data)
     if "group" in data:
         group_name = data["group"].get("name")
         group_description = data["group"].get("description")
@@ -203,8 +192,6 @@ def discover_groups():
     # Query all groups from the database
     try:
         available_groups = Group.query.all()
-        for group in available_groups:
-            print(group.to_dict())
         groups_data = [group.to_dict() for group in available_groups]  # Convert groups to dictionaries
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -252,12 +239,10 @@ def join_group(group_id):
     except SQLAlchemyError as e:
         db.session.rollback()
         # Log the error as needed
-        print(f"Database error: {e}")
         return jsonify({"error": "An error occurred while joining the group."}), 500
 
     except Exception as e:
         # Log the error as needed
-        print(f"Unexpected error: {e}")
         return jsonify({"error": "An unexpected error occurred."}), 500
 def complete_activity(group_id):
     user = session.get("user")
@@ -286,10 +271,13 @@ def complete_activity(group_id):
         return jsonify({"error": "Already completed today"}), 400
 
     # 3) Otherwise create a new record
+    #    completed_at is auto-set to datetime.utcnow() if specified as a default,
+    #    or you can explicitly set it here if you prefer.
     activity = UserActivity(
         user_id=user_obj.id,
         group_id=group_id,
-        completed_date=today
+        completed_date=today,
+        completed_at=datetime.utcnow()  # only needed if you want to override or be explicit
     )
     db.session.add(activity)
     db.session.commit()
@@ -299,6 +287,7 @@ def complete_activity(group_id):
         "group_id": group_id,
         "user_email": user_email,
         "completed_date": today.isoformat(),
+        "completed_at": activity.completed_at.isoformat()  # Return timestamp as well
     })
 def get_leaderboard(group_id):
     user = session.get("user")
@@ -370,7 +359,6 @@ def get_group_activity(group_id):
     data = []
     today = date.today()
     for record in activity_list:
-        print(")))))))))))))))))))))" , record)
         days_ago = (today - record.completed_date).days
         data.append({
             "user_name": record.user_name,
@@ -390,7 +378,6 @@ def send_message_to_group(group_id):
     """
     user = session.get("user")
     user_picture = user["picture"]
-    print("This is the user picture that was sent:" , user_picture)
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
@@ -411,7 +398,6 @@ def send_message_to_group(group_id):
     db.session.commit()
 
     # Broadcast to all clients in the group room
-    print(socketio)
     socketio.emit(
         "group_message", 
         {"user": user["name"], "message": content , "user_image":user_picture}, 
@@ -433,8 +419,7 @@ def get_messages(group_id):
         .filter_by(group_id=group_id) \
         .order_by(Message.created_at.asc()) \
         .all()
-    
-    print("These are the group messages: " , group_msgs)
+
 
     messages_data = [
         {
@@ -493,7 +478,6 @@ def handle_send_message(data):
     Socket.IO event for directly sending a message via WebSocket.
     Also saves to DB, then emits to the group room.
     """
-    print("Inside handle message section")
     user = session.get("user")
     if not user:
         emit("error", {"error": "Not logged in"})
@@ -523,3 +507,17 @@ def handle_send_message(data):
         "user": user_name, 
         "message": content
     }, room=group_id)
+def check_habit_completion(group_id):
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    user_email = user["email"]
+    today = date.today()
+
+    habit_completed = UserActivity.query.filter_by(
+        group_id=group_id,
+        completed_date=today,
+    ).first()
+
+    return jsonify({"completed": bool(habit_completed)})
