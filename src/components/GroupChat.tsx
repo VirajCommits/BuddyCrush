@@ -13,7 +13,7 @@ interface Message {
 }
 
 // Define props for this component
-// NOTE: Added currentUser prop to know which messages are yours.
+// NOTE: Added currentUser prop to identify which messages are yours.
 interface GroupChatProps {
   groupId: number;
   currentUser: string;
@@ -24,11 +24,15 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom whenever messages update.
+  // Create a ref for the messages container so that we can scroll it
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll the messages container whenever messages update.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   // 1) Join Socket & Listen
@@ -85,30 +89,22 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
     }
   };
 
-  // If loading, show skeleton placeholders + "Loading chat..."
+  // Loading state: show skeleton placeholders and a "Loading chat..." message
   if (loading) {
     return (
       <>
         {/* Global keyframes for blinking animation */}
         <style jsx global>{`
           @keyframes blink {
-            0% {
-              opacity: 1;
-            }
-            50% {
-              opacity: 0.5;
-            }
-            100% {
-              opacity: 1;
-            }
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
           }
         `}</style>
 
         <div style={styles.container}>
           <div style={styles.header}>
-            <button onClick={onClose} style={styles.closeBtn}>
-              X
-            </button>
+            <button onClick={onClose} style={styles.closeBtn}>X</button>
             <p style={{ margin: 0 }}>Group Chat</p>
           </div>
 
@@ -123,56 +119,43 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
           </div>
 
           <div style={styles.inputRow}>
-            <input
-              style={styles.inputDisabled}
-              placeholder="Loading..."
-              disabled
-            />
-            <button style={styles.sendBtnDisabled} disabled>
-              Send
-            </button>
+            <input style={styles.inputDisabled} placeholder="Loading..." disabled />
+            <button style={styles.sendBtnDisabled} disabled>Send</button>
           </div>
         </div>
       </>
     );
   }
 
-  // Otherwise, show the actual chat
+  // Chat display
   return (
     <>
       {/* Global blink animation */}
       <style jsx global>{`
         @keyframes blink {
-          0% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-          100% {
-            opacity: 1;
-          }
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
         }
       `}</style>
 
       <div style={styles.container}>
         <div style={styles.header}>
-          <button onClick={onClose} style={styles.closeBtn}>
-            X
-          </button>
+          <button onClick={onClose} style={styles.closeBtn}>X</button>
           <p style={{ margin: 0 }}>Group Chat</p>
         </div>
 
-        <div style={styles.messagesArea}>
+        {/* Messages area with its own scroll behavior.
+            The onWheel stops the scroll event from affecting the main page. */}
+        <div
+          ref={messagesContainerRef}
+          onWheel={(e) => e.stopPropagation()}
+          style={styles.messagesArea}
+        >
           {messages.map((m, i) => {
             const isCurrentUser = m.user === currentUser;
             return (
-              <div
-                key={i}
-                style={
-                  isCurrentUser ? styles.myMessageRow : styles.otherMessageRow
-                }
-              >
+              <div key={i} style={isCurrentUser ? styles.myMessageRow : styles.otherMessageRow}>
                 {/* For other users, show avatar on left */}
                 {!isCurrentUser && (
                   <img
@@ -186,11 +169,7 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
 
                 <div style={styles.messageContent}>
                   <div style={styles.username}>{m.user}</div>
-                  <div
-                    style={
-                      isCurrentUser ? styles.myBubble : styles.otherBubble
-                    }
-                  >
+                  <div style={isCurrentUser ? styles.myBubble : styles.otherBubble}>
                     {m.message}
                   </div>
                 </div>
@@ -208,8 +187,6 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
               </div>
             );
           })}
-          {/* Dummy element to scroll into view */}
-          <div ref={messagesEndRef} />
         </div>
 
         <div style={styles.inputRow}>
@@ -273,7 +250,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     overflowY: "auto",
     padding: "8px",
   },
-  // New container styles for message rows based on sender:
   myMessageRow: {
     display: "flex",
     alignItems: "flex-start",
@@ -286,18 +262,20 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: "flex-start",
     marginBottom: "6px",
   },
-  // Container for message text and username
   messageContent: {
     display: "flex",
     flexDirection: "column",
     maxWidth: "70%",
   },
+  // Improved username styling:
   username: {
-    fontSize: "0.75rem",
-    color: "#ccc",
-    marginBottom: "2px",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    color: "#ffdd57",
+    marginBottom: "4px",
+    letterSpacing: "0.5px",
+    textShadow: "1px 1px 2px rgba(0,0,0,0.5)",
   },
-  // Different bubble styles for current user and others:
   myBubble: {
     backgroundColor: "#007bff",
     color: "#fff",
@@ -344,7 +322,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: "pointer",
     fontWeight: 500,
   },
-  // Loading state (skeleton)
   loadingContainer: {
     display: "flex",
     justifyContent: "center",
@@ -360,7 +337,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     overflowY: "auto",
     padding: "8px",
   },
-  // Skeleton row
   skeletonMessageRow: {
     display: "flex",
     alignItems: "center",
@@ -381,7 +357,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: "12px",
     animation: "blink 1.2s ease-in-out infinite",
   },
-  // Disabled input & send button during loading
   inputDisabled: {
     flex: 1,
     borderRadius: 4,
@@ -401,4 +376,3 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: 500,
   },
 };
-
