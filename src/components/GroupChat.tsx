@@ -32,8 +32,15 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
 
   // On component mount, scroll the main page so that the chat container is at the top.
   useEffect(() => {
-    chatContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (chatContainerRef.current) {
+      // Get the chat container's position relative to the viewport.
+      const rect = chatContainerRef.current.getBoundingClientRect();
+      // Calculate the offset: scroll so that the chat container’s top is 50px from the top.
+      const offset = rect.top - 50;
+      window.scrollBy({ top: offset, behavior: "smooth" });
+    }
   }, []);
+  
 
   // Auto-scroll the messages container whenever messages update.
   useEffect(() => {
