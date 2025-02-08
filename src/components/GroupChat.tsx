@@ -36,7 +36,7 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
       // Get the chat container's position relative to the viewport.
       const rect = chatContainerRef.current.getBoundingClientRect();
       // Calculate the offset: scroll so that the chat container’s top is 50px from the top.
-      const offset = rect.top - 50;
+      const offset = rect.top - 200;
       window.scrollBy({ top: offset, behavior: "smooth" });
     }
   }, []);
