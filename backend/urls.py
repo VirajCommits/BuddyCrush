@@ -1,6 +1,6 @@
 # urls.py
 
-from views import (
+from .views import (
     discover_groups,
     send_message_to_group,
     get_messages,
