@@ -25,15 +25,8 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Ref for the outer chat container – used to scroll the main page
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  // Ref for the inner messages container – used to auto-scroll the messages themselves
+  // Create a ref for the messages container so that we can scroll it
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-
-  // On component mount, scroll the main page so that the chat container is at the top.
-  useEffect(() => {
-    chatContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   // Auto-scroll the messages container whenever messages update.
   useEffect(() => {
@@ -41,6 +34,22 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Custom wheel handler: prevent the main page from scrolling unless at container boundaries.
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      // If scrolling upward and not at the very top, stop propagation.
+      if (e.deltaY < 0 && scrollTop > 0) {
+        e.stopPropagation();
+      }
+      // If scrolling downward and not at the very bottom, stop propagation.
+      else if (e.deltaY > 0 && scrollTop + clientHeight < scrollHeight) {
+        e.stopPropagation();
+      }
+      // Otherwise, let a little scroll propagate to the main page.
+    }
+  };
 
   // 1) Join Socket & Listen
   useEffect(() => {
@@ -109,7 +118,7 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
           }
         `}</style>
 
-        <div style={styles.container} ref={chatContainerRef}>
+        <div style={styles.container}>
           <div style={styles.header}>
             <button onClick={onClose} style={styles.closeBtn}>X</button>
             <p style={{ margin: 0 }}>Group Chat</p>
@@ -146,17 +155,16 @@ export default function GroupChat({ groupId, currentUser, onClose }: GroupChatPr
         }
       `}</style>
 
-      <div style={styles.container} ref={chatContainerRef}>
+      <div style={styles.container}>
         <div style={styles.header}>
           <button onClick={onClose} style={styles.closeBtn}>X</button>
           <p style={{ margin: 0 }}>Group Chat</p>
         </div>
 
-        {/* Messages area with its own scroll behavior.
-            The onWheel stops the scroll event from affecting the main page. */}
+        {/* Messages area with its own scroll behavior */}
         <div
           ref={messagesContainerRef}
-          onWheel={(e) => e.stopPropagation()}
+          onWheel={handleWheel}
           style={styles.messagesArea}
         >
           {messages.map((m, i) => {
