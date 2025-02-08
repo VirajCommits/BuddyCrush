@@ -58,13 +58,13 @@ def google_login():
 
 def google_callback():
     code = request.args.get("code")
-
     if not code:
-        return jsonify({"error": "Authorization code not found"}), 400
+        return jsonify({"error": "Missing authorization code"}), 400
 
     google_provider_cfg = get_google_provider_cfg()
     token_endpoint = google_provider_cfg["token_endpoint"]
 
+    # Exchange the code immediately for tokens
     token_url, headers, body = client.prepare_token_request(
         token_endpoint,
         authorization_response=request.url,
@@ -79,6 +79,9 @@ def google_callback():
         data=body,
         auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
     )
+    
+    if token_response.status_code != 200:
+        return jsonify({"error": "Token exchange failed, try logging in again."}), 400
 
     client.parse_request_body_response(token_response.text)
 
@@ -259,7 +262,7 @@ def complete_activity(group_id):
     if not user_obj:
         return jsonify({"error": "User not found"}), 404
 
-    # 2) Check if user has completed this group’s habit today
+    # 2) Check if user has completed this group's habit today
     today = date.today()
     existing_record = UserActivity.query.filter_by(
         user_id=user_obj.id,
