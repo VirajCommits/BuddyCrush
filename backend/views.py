@@ -113,7 +113,7 @@ def google_callback():
     }
     session.permanent = True  # Optional: Makes the session permanent based on app config
 
-    return redirect("http://127.0.0.1:5000/profile")
+    return redirect("https://pal-crush-2c20ca197e75.herokuapp.com/profile")
 
 def profile():
     user = session.get("user")
