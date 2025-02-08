@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import socket from "../utils/socket";
 
 // Define the shape of each message
@@ -13,15 +13,23 @@ interface Message {
 }
 
 // Define props for this component
+// NOTE: Added currentUser prop to know which messages are yours.
 interface GroupChatProps {
   groupId: number;
+  currentUser: string;
   onClose: () => void;
 }
 
-export default function GroupChat({ groupId, onClose }: GroupChatProps) {
+export default function GroupChat({ groupId, currentUser, onClose }: GroupChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom whenever messages update.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // 1) Join Socket & Listen
   useEffect(() => {
@@ -132,7 +140,7 @@ export default function GroupChat({ groupId, onClose }: GroupChatProps) {
   // Otherwise, show the actual chat
   return (
     <>
-      {/* Keep the blink animation globally if you'd like to reuse it */}
+      {/* Global blink animation */}
       <style jsx global>{`
         @keyframes blink {
           0% {
@@ -156,18 +164,52 @@ export default function GroupChat({ groupId, onClose }: GroupChatProps) {
         </div>
 
         <div style={styles.messagesArea}>
-          {messages.map((m, i) => (
-            <div key={i} style={styles.messageRow}>
-              <img
-                src={m.user_image || "https://via.placeholder.com/30"}
-                width={30}
-                height={30}
-                alt="avatar"
-                style={styles.avatar}
-              />
-              <div style={styles.bubble}>{m.message}</div>
-            </div>
-          ))}
+          {messages.map((m, i) => {
+            const isCurrentUser = m.user === currentUser;
+            return (
+              <div
+                key={i}
+                style={
+                  isCurrentUser ? styles.myMessageRow : styles.otherMessageRow
+                }
+              >
+                {/* For other users, show avatar on left */}
+                {!isCurrentUser && (
+                  <img
+                    src={m.user_image || "https://via.placeholder.com/30"}
+                    width={30}
+                    height={30}
+                    alt="avatar"
+                    style={styles.avatar}
+                  />
+                )}
+
+                <div style={styles.messageContent}>
+                  <div style={styles.username}>{m.user}</div>
+                  <div
+                    style={
+                      isCurrentUser ? styles.myBubble : styles.otherBubble
+                    }
+                  >
+                    {m.message}
+                  </div>
+                </div>
+
+                {/* For current user, show avatar on right */}
+                {isCurrentUser && (
+                  <img
+                    src={m.user_image || "https://via.placeholder.com/30"}
+                    width={30}
+                    height={30}
+                    alt="avatar"
+                    style={styles.avatar}
+                  />
+                )}
+              </div>
+            );
+          })}
+          {/* Dummy element to scroll into view */}
+          <div ref={messagesEndRef} />
         </div>
 
         <div style={styles.inputRow}>
@@ -231,23 +273,51 @@ const styles: { [key: string]: React.CSSProperties } = {
     overflowY: "auto",
     padding: "8px",
   },
-  messageRow: {
+  // New container styles for message rows based on sender:
+  myMessageRow: {
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
+    justifyContent: "flex-end",
     marginBottom: "6px",
   },
-  avatar: {
-    borderRadius: "50%",
-    objectFit: "cover",
+  otherMessageRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    marginBottom: "6px",
   },
-  bubble: {
-    marginLeft: 8,
+  // Container for message text and username
+  messageContent: {
+    display: "flex",
+    flexDirection: "column",
+    maxWidth: "70%",
+  },
+  username: {
+    fontSize: "0.75rem",
+    color: "#ccc",
+    marginBottom: "2px",
+  },
+  // Different bubble styles for current user and others:
+  myBubble: {
+    backgroundColor: "#007bff",
+    color: "#fff",
+    padding: "6px 10px",
+    borderRadius: 12,
+    lineHeight: 1.4,
+    textAlign: "right",
+  },
+  otherBubble: {
     backgroundColor: "#2e3a4b",
     color: "#fff",
     padding: "6px 10px",
     borderRadius: 12,
-    maxWidth: "70%",
     lineHeight: 1.4,
+    textAlign: "left",
+  },
+  avatar: {
+    borderRadius: "50%",
+    objectFit: "cover",
+    margin: "0 8px",
   },
   inputRow: {
     display: "flex",
@@ -274,7 +344,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: "pointer",
     fontWeight: 500,
   },
-
   // Loading state (skeleton)
   loadingContainer: {
     display: "flex",
@@ -291,7 +360,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     overflowY: "auto",
     padding: "8px",
   },
-
   // Skeleton row
   skeletonMessageRow: {
     display: "flex",
@@ -313,7 +381,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: "12px",
     animation: "blink 1.2s ease-in-out infinite",
   },
-
   // Disabled input & send button during loading
   inputDisabled: {
     flex: 1,
@@ -334,3 +401,4 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: 500,
   },
 };
+
