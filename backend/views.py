@@ -50,7 +50,7 @@ def google_login():
     request_uri = client.prepare_request_uri(
         authorization_endpoint,
         redirect_uri=GOOGLE_REDIRECT_URI,
-        scope=["openid", "email", "profile"],
+        scope="openid email profile",
     )
     return redirect(request_uri)
 
