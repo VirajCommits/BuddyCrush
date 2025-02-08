@@ -7,8 +7,8 @@ import os
 from dotenv import load_dotenv
 import redis
 from .extensions import db
-from socketio_instance import socketio
-from urls import setup_routes
+from .socketio_instance import socketio
+from .urls import setup_routes
 
 load_dotenv()
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # Dev only

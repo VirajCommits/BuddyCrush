@@ -5,7 +5,7 @@ from flask_socketio import send, join_room, leave_room, emit
 import redis
 from socketio_instance import socketio  # Import the SocketIO instance
 from models import Message
-from extensions import db
+from .extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
