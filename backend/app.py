@@ -6,7 +6,7 @@ from flask_migrate import Migrate
 import os
 from dotenv import load_dotenv
 import redis
-from extensions import db
+from .extensions import db
 from socketio_instance import socketio
 from urls import setup_routes
 
