@@ -1,16 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
+import { useRouter } from "next/navigation";
 import DiscoverGroups from "../../components/DiscoverGroups";
 
 export default function DiscoverGroupsPage() {
+  const router = useRouter();
+  console.log(router)
+
+  // Event handler for back button using useCallback to prevent re-creation on each render
+  const handleBack = useCallback(() => {
+    console.log("Viraj")
+    router.back();
+  }, [router]);
+
+
+  console.log("I am inside discover page!")
   return (
     <div style={styles.pageContainer}>
       <div style={styles.header}>
         <button
           style={styles.backButton}
-          onClick={() => history.back()}
-          aria-label="Go Back"
+          onClick={handleBack}
+          aria-label="Go Back Viraj"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -26,13 +38,14 @@ export default function DiscoverGroupsPage() {
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
         </button>
-        <h1 style={styles.heading}>Discover accountability groups</h1>
+        <h1 style={styles.heading}>Discover Accountability Groups</h1>
       </div>
       <DiscoverGroups />
     </div>
   );
 }
 
+// Styles moved outside the component to prevent re-creation on each render
 const styles: { [key: string]: React.CSSProperties } = {
   pageContainer: {
     padding: "10px",
@@ -60,18 +73,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     textDecoration: "none",
     transition: "transform 0.2s, color 0.2s",
   },
-  backButtonHover: {
-    transform: "scale(1.05)",
-    color: "#A1A8FF", // Slightly lighter blue on hover
-  },
   backIcon: {
     marginRight: "0px",
     transition: "stroke 0.2s",
-  },
-  backText: {
-    fontSize: "16px",
-    fontWeight: "bold",
-    transition: "color 0.2s",
   },
   heading: {
     fontSize: "32px",

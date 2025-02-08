@@ -1,70 +1,55 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { CSSProperties, useEffect, useState } from "react";
+import React, { useCallback } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import GroupCard from "../../components/GroupCard";
+import Link from "next/link";
 
-interface User {
-  name: string;
-  email: string;
-  picture: string;
-}
+// Define TypeScript interfaces if using TypeScript
 
 interface Group {
   id: number;
   name: string;
-  members: Array<{ email: string }>;
+  members: Array<{ email: string; user_image?: string; name?: string }>;
 }
 
 export default function Profile() {
-  const [user, setUser] = useState<User | null>(null);
-
-  // Separate loading state for joined groups only
-  const [joinedGroups, setJoinedGroups] = useState<Group[]>([]);
-  const [joinedGroupsLoading, setJoinedGroupsLoading] = useState(true);
-
-  const [error, setError] = useState("");
   const router = useRouter();
 
-  // 1) Fetch user profile (immediately displayed once loaded)
-  useEffect(() => {
-    (async () => {
-      try {
-        const response = await axios.get("/api/profile", {
-          withCredentials: true,
-        });
-        setUser(response.data.user);
-      } catch (err: any) {
-        setError(err.response?.data?.error || "Failed to fetch profile");
-      }
-    })();
-  }, []);
-
-  // 2) Fetch joined groups (uses separate loading state)
-  useEffect(() => {
-    (async () => {
-      if (!user) return; // Wait until user is set
-      try {
-        const response = await axios.get("/api/groups/discover", {
-          withCredentials: true,
-        });
-        const allGroups: Group[] = response.data.groups || [];
-        const joined = allGroups.filter((g) =>
-          g.members.some((m) => m.email === user.email)
-        );
-        setJoinedGroups(joined);
-      } catch (err) {
-        console.error("Error fetching groups:", err);
-      } finally {
-        setJoinedGroupsLoading(false); // Stop skeleton in either success or fail
-      }
-    })();
-  }, [user]);
+  // Fetch user profile using React Query
+  const { data: user, error, isLoading } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const response = await axios.get('/api/profile', { withCredentials: true });
+      return response.data.user;
+    },
+    staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+    gcTime: 30 * 60 * 1000, // Cache data for 30 minutes
+  });
+  // Fetch joined groups using React Query, dependent on user data
+  const {
+    data: joinedGroups,
+    error: groupsError,
+    isLoading: groupsLoading,
+  } = useQuery<Group[]>({
+    queryKey: ["joinedGroups", user?.email],
+    queryFn: async () => {
+      const response = await axios.get("/api/groups/discover", {
+        withCredentials: true,
+      });
+      const allGroups: Group[] = response.data.groups || [];
+      return allGroups.filter((g) => g.members.some((m) => m.email === user?.email));
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+    gcTime: 30 * 60 * 1000, // Cache data for 30 minutes
+  });
 
   // Logout Handler
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await axios.post("/api/logout", {}, { withCredentials: true });
       router.push("/");
@@ -72,20 +57,25 @@ export default function Profile() {
       console.error("Logout failed:", error);
       alert("Logout failed, see console for details.");
     }
-  };
+  }, [router]);
 
-  // Error State
-  if (error) {
-    return <div style={styles.errorMsg}>Error: {error}</div>;
+  // Handle errors
+  if (error || groupsError) {
+    return <div style={styles.errorMsg}>Error: {error?.message || groupsError?.message}</div>;
   }
 
-  // If user not loaded yet, you could show a quick fallback:
-  if (!user) {
+  // Loading state for user profile
+  if (isLoading) {
     return (
       <div style={styles.loadingWrapper}>
         <p style={styles.loadingText}>Loading profile...</p>
       </div>
     );
+  }
+
+  // If user is not loaded for some reason
+  if (!user) {
+    return <div style={styles.errorMsg}>User not found.</div>;
   }
 
   // ---------------------
@@ -115,7 +105,7 @@ export default function Profile() {
           <div style={styles.userArea}>
             <img
               src={user.picture || "https://via.placeholder.com/40"}
-              alt={`${user.name} avatars`}
+              alt={`${user.name} avatar`}
               width={40}
               height={40}
               style={styles.headerAvatar}
@@ -126,7 +116,7 @@ export default function Profile() {
         <div style={styles.container}>
           {/* Profile Card */}
           <section style={styles.profileCard}>
-            <h2 style={styles.welcomeText}>Welcome , {user.name}!</h2>
+            <h2 style={styles.welcomeText}>Welcome, {user.name}!</h2>
             <img
               src={user.picture || "https://via.placeholder.com/140"}
               alt={`${user.name}'s avatar`}
@@ -147,9 +137,10 @@ export default function Profile() {
               <p style={styles.cardDesc}>
                 Start a new accountability group to track your habits together!
               </p>
-              <a href="/new" style={styles.actionButton}>
+              <Link href="/new" style={styles.actionButton}>
                 Create Group
-              </a>
+              </Link>
+
             </div>
             <div style={styles.card}>
               <h3 style={styles.cardTitle}>Discover Groups</h3>
@@ -162,16 +153,16 @@ export default function Profile() {
             </div>
           </section>
 
-          {/* Joined Groups Section (with partial skeleton) */}
+          {/* Joined Groups Section */}
           <section style={styles.groupsSection}>
             <h2 style={styles.subheading}>Your Joined Groups</h2>
-            {joinedGroupsLoading ? (
+            {groupsLoading ? (
               <GroupsSkeleton />
-            ) : joinedGroups.length === 0 ? (
+            ) : joinedGroups?.length === 0 ? (
               <p style={styles.noGroupsText}>You have not joined any groups.</p>
             ) : (
               <div style={styles.groupsGrid}>
-                {joinedGroups.map((group) => (
+                {joinedGroups?.map((group) => (
                   <GroupCard key={group.id} group={group} />
                 ))}
               </div>
@@ -200,7 +191,7 @@ function GroupsSkeleton() {
 /* --------------------------------------------
    Dark-themed inline styles
 -------------------------------------------- */
-const styles: { [key: string]: CSSProperties } = {
+const styles: { [key: string]: React.CSSProperties } = {
   pageWrapper: {
     minHeight: "100vh",
     backgroundColor: "#121212",
@@ -346,5 +337,12 @@ const styles: { [key: string]: CSSProperties } = {
     fontSize: "1rem",
     fontFamily: "sans-serif",
     fontStyle: "italic",
+  },
+
+  errorMsg: {
+    color: "red",
+    textAlign: "center",
+    marginTop: "20px",
+    fontSize: "1.2rem",
   },
 };
