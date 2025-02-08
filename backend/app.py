@@ -25,12 +25,12 @@ def create_app():
 
     # Redis session config
     app.config["SESSION_TYPE"] = "redis"
-    app.config["SESSION_REDIS"] = redis.from_url("redis://127.0.0.1:6379/0")
+    redis_url = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+    app.config["SESSION_REDIS"] = redis.from_url(redis_url)
     app.config["SESSION_PERMANENT"] = True
     app.config["PERMANENT_SESSION_LIFETIME"] = 3600
     app.config["SESSION_USE_SIGNER"] = True
     app.config["SESSION_KEY_PREFIX"] = "session:"
-
     app.config.update(
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
