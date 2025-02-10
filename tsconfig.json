@@ -37,7 +37,7 @@
     "src/components/GroupCard.js",
     "src/components/ProfilePage.tsx",
     "../out/types/**/*.ts"
-  ],
+, "src/app/secret/page.js"  ],
   "exclude": [
     "node_modules"
   ]
