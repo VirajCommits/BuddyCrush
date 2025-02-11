@@ -29,7 +29,7 @@ export default function SecretTrackingPage() {
   return (
     <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
       <h1 style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-        Logged In Users
+        Logged In Users(Total User Count:43)
       </h1>
       {users.length === 0 ? (
         <p style={{ textAlign: "center" }}>No users have logged in yet.</p>
