@@ -26,8 +26,9 @@ def create_app():
     app = Flask(__name__, static_folder=None)
     app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
 
-    # Database config
-    db_url = os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
+    # Database config (Supabase uses POSTGRES_URL_NON_POOLING, Vercel uses POSTGRES_URL)
+    db_url = os.getenv("POSTGRES_URL_NON_POOLING") or os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL") or "sqlite:///app.db"
+    db_url = db_url.replace("postgres://", "postgresql://")
     # Ensure SSL for production PostgreSQL
     if db_url.startswith("postgresql://") and "sslmode" not in db_url:
         separator = "&" if "?" in db_url else "?"
@@ -56,6 +57,10 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
     Session(app)
+
+    # Auto-create tables if they don't exist
+    with app.app_context():
+        db.create_all()
 
     # Socket.IO (only useful when running locally, not on Vercel serverless)
     if not os.environ.get("VERCEL"):
