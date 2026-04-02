@@ -1,11 +1,18 @@
 # app.py
-import eventlet
-eventlet.monkey_patch()
-from flask import Flask, send_from_directory
+import os
+
+# Only monkey-patch when running locally with eventlet (not on Vercel serverless)
+if not os.environ.get("VERCEL"):
+    try:
+        import eventlet
+        eventlet.monkey_patch()
+    except ImportError:
+        pass
+
+from flask import Flask
 from flask_cors import CORS
 from flask_session import Session
 from flask_migrate import Migrate
-import os
 from dotenv import load_dotenv
 import redis
 from .extensions import db
@@ -47,39 +54,20 @@ def create_app():
     Migrate(app, db)
     Session(app)
 
-    # Socket.IO
-    socketio.init_app(app, cors_allowed_origins="*")
+    # Socket.IO (only useful when running locally, not on Vercel serverless)
+    if not os.environ.get("VERCEL"):
+        socketio.init_app(app, cors_allowed_origins="*")
 
     # Register routes
     setup_routes(app)
 
-    # Serve Next.js exported build from /out
-    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-    OUT_FOLDER = os.path.join(PROJECT_ROOT, "out")
-
-    @app.route("/")
-    def serve_index():
-        return send_from_directory(OUT_FOLDER, "index.html")
-
-    @app.route("/<path:path>")
-    def serve_static(path):
-        full_path = os.path.join(OUT_FOLDER, path)
-        if not os.path.isfile(full_path):
-            # If `profile.html` exists, serve that
-            possible_html = os.path.join(OUT_FOLDER, f"{path}.html")
-            if os.path.isfile(possible_html):
-                return send_from_directory(OUT_FOLDER, f"{path}.html")
-            # Otherwise fallback
-            return send_from_directory(OUT_FOLDER, "index.html")
-        return send_from_directory(OUT_FOLDER, path)
-
-
-    # Optionally enable CORS if needed
-    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+    # Enable CORS
+    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
     return app
 
 app = create_app()
 
 if __name__ == "__main__":
+    socketio.init_app(app, cors_allowed_origins="*")
     socketio.run(app, host="127.0.0.1", port=5000, debug=True)

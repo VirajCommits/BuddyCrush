@@ -38,7 +38,7 @@ export default function LoginPage() {
           </p>
 
           <a
-            href="https://pal-crush-2c20ca197e75.herokuapp.com/api/google/login"
+            href="/api/google/login"
             className="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-xl bg-white text-gray-800 font-semibold text-base hover:bg-gray-100 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg no-underline"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
