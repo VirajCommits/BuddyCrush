@@ -14,7 +14,6 @@ from flask_cors import CORS
 from flask_session import Session
 from flask_migrate import Migrate
 from dotenv import load_dotenv
-import redis
 from .extensions import db
 from .socketio_instance import socketio
 from .urls import setup_routes
@@ -36,14 +35,9 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # Redis session config
-    app.config["SESSION_TYPE"] = "redis"
-    redis_url = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
-    if redis_url.startswith("rediss://"):
-        app.config["SESSION_REDIS"] = redis.from_url(redis_url, ssl_cert_reqs=None)
-    else:
-        app.config["SESSION_REDIS"] = redis.from_url(redis_url)
-    # app.config["SESSION_REDIS"] = redis.from_url(redis_url)
+    # Session config (use SQLAlchemy backed by Supabase Postgres)
+    app.config["SESSION_TYPE"] = "sqlalchemy"
+    app.config["SESSION_SQLALCHEMY"] = db
     app.config["SESSION_PERMANENT"] = True
     app.config["PERMANENT_SESSION_LIFETIME"] = 3600
     app.config["SESSION_USE_SIGNER"] = True
