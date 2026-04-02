@@ -27,9 +27,12 @@ def create_app():
     app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
 
     # Database config
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
-    )
+    db_url = os.getenv("DATABASE_URL", "sqlite:///app.db").replace("postgres://", "postgresql://")
+    # Ensure SSL for production PostgreSQL
+    if db_url.startswith("postgresql://") and "sslmode" not in db_url:
+        separator = "&" if "?" in db_url else "?"
+        db_url += f"{separator}sslmode=require"
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Redis session config
