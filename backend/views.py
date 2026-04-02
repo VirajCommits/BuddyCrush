@@ -44,6 +44,9 @@ def get_google_provider_cfg():
 # View Functions
 
 def google_login():
+    if not GOOGLE_CLIENT_ID or not GOOGLE_AUTH_URI or not GOOGLE_REDIRECT_URI:
+        return jsonify({"error": "Google OAuth not configured. Missing environment variables."}), 500
+
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
 
