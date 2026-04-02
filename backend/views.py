@@ -2,7 +2,6 @@
 
 from flask import redirect, request, jsonify, session
 from flask_socketio import send, join_room, leave_room, emit
-import redis
 from .socketio_instance import socketio  # Import the SocketIO instance
 from .models import Message
 from .extensions import db
