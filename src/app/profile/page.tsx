@@ -1,6 +1,5 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useCallback } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -8,28 +7,26 @@ import { useQuery } from "@tanstack/react-query";
 import GroupCard from "../../components/GroupCard";
 import Link from "next/link";
 
-// Define TypeScript interfaces if using TypeScript
-
 interface Group {
   id: number;
   name: string;
+  description: string;
   members: Array<{ email: string; user_image?: string; name?: string }>;
 }
 
 export default function Profile() {
   const router = useRouter();
 
-  // Fetch user profile using React Query
   const { data: user, error, isLoading } = useQuery({
-    queryKey: ['profile'],
+    queryKey: ["profile"],
     queryFn: async () => {
-      const response = await axios.get('/api/profile', { withCredentials: true });
+      const response = await axios.get("/api/profile", { withCredentials: true });
       return response.data.user;
     },
-    staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
-    gcTime: 30 * 60 * 1000, // Cache data for 30 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
-  // Fetch joined groups using React Query, dependent on user data
+
   const {
     data: joinedGroups,
     error: groupsError,
@@ -37,312 +34,165 @@ export default function Profile() {
   } = useQuery<Group[]>({
     queryKey: ["joinedGroups", user?.email],
     queryFn: async () => {
-      const response = await axios.get("/api/groups/discover", {
-        withCredentials: true,
-      });
+      const response = await axios.get("/api/groups/discover", { withCredentials: true });
       const allGroups: Group[] = response.data.groups || [];
       return allGroups.filter((g) => g.members.some((m) => m.email === user?.email));
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
-    gcTime: 30 * 60 * 1000, // Cache data for 30 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
-  // Logout Handler
   const handleLogout = useCallback(async () => {
     try {
       await axios.post("/api/logout", {}, { withCredentials: true });
       router.push("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      alert("Logout failed, see console for details.");
+    } catch (err) {
+      console.error("Logout failed:", err);
     }
   }, [router]);
 
-  // Handle errors
   if (error || groupsError) {
-    return <div style={styles.errorMsg}>Error: {error?.message || groupsError?.message}</div>;
-  }
-
-  // Loading state for user profile
-  if (isLoading) {
     return (
-      <div style={styles.loadingWrapper}>
-        <p style={styles.loadingText}>Loading profile...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="glass-card p-8 text-center">
+          <p className="text-red-400 text-lg">Something went wrong. Please try again.</p>
+        </div>
       </div>
     );
   }
 
-  // If user is not loaded for some reason
-  if (!user) {
-    return <div style={styles.errorMsg}>User not found.</div>;
-  }
-
-  // ---------------------
-  // Actual Page Content
-  // ---------------------
-  return (
-    <>
-      {/* Only needed if you want a blinking effect for the skeleton */}
-      <style jsx global>{`
-        @keyframes blink {
-          0% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-          100% {
-            opacity: 1;
-          }
-        }
-      `}</style>
-
-      <div style={styles.pageWrapper}>
-        {/* Header */}
-        <header style={styles.header}>
-          <h1 style={styles.logoText}>Buddy Board</h1>
-          <div style={styles.userArea}>
-            <img
-              src={user.picture || "https://via.placeholder.com/40"}
-              alt={`${user.name} avatar`}
-              width={40}
-              height={40}
-              style={styles.headerAvatar}
-            />
-          </div>
-        </header>
-
-        <div style={styles.container}>
-          {/* Profile Card */}
-          <section style={styles.profileCard}>
-            <h2 style={styles.welcomeText}>Welcome, {user.name}!</h2>
-            <img
-              src={user.picture || "https://via.placeholder.com/140"}
-              alt={`${user.name}'s avatar`}
-              width={140}
-              height={140}
-              style={styles.avatar}
-            />
-            <p style={styles.emailText}>Email: {user.email}</p>
-            <button onClick={handleLogout} style={styles.logoutButton}>
-              Log Out
-            </button>
-          </section>
-
-          {/* Create/Discover Groups Cards */}
-          <section style={styles.cardRow}>
-            <div style={styles.card}>
-              <h3 style={styles.cardTitle}>Create Group</h3>
-              <p style={styles.cardDesc}>
-                Start a new accountability group to track your habits together!
-              </p>
-              <Link href="/new" style={styles.actionButton}>
-                Create Group
-              </Link>
-
-            </div>
-            <div style={styles.card}>
-              <h3 style={styles.cardTitle}>Discover Groups</h3>
-              <p style={styles.cardDesc}>
-                Join existing groups and find new buddies to crush your goals.
-              </p>
-              <a href="/discover" style={styles.actionButton}>
-                Discover Groups
-              </a>
-            </div>
-          </section>
-
-          {/* Joined Groups Section */}
-          <section style={styles.groupsSection}>
-            <h2 style={styles.subheading}>Your Joined Groups</h2>
-            {groupsLoading ? (
-              <GroupsSkeleton />
-            ) : joinedGroups?.length === 0 ? (
-              <p style={styles.noGroupsText}>You have not joined any groups.</p>
-            ) : (
-              <div style={styles.groupsGrid}>
-                {joinedGroups?.map((group) => (
-                  <GroupCard key={group.id} group={group} />
-                ))}
-              </div>
-            )}
-          </section>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-[var(--text-secondary)] animate-pulse">Loading your profile...</p>
         </div>
       </div>
-    </>
-  );
-}
+    );
+  }
 
-/* --------------------------------------------
-   Skeleton for the "Joined Groups" only
--------------------------------------------- */
-function GroupsSkeleton() {
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="glass-card p-8 text-center">
+          <p className="text-[var(--text-secondary)]">User not found.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={styles.groupsGrid}>
-      {/* Render 2-3 skeleton group cards to mimic layout */}
-      {[...Array(2)].map((_, i) => (
-        <div key={i} style={styles.skeletonGroupCard} />
-      ))}
+    <div className="min-h-screen bg-[var(--bg-primary)]">
+      {/* Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
+          <h1 className="text-xl font-bold gradient-text">BuddyCrush</h1>
+          <div className="flex items-center gap-4">
+            <img
+              src={user.picture || "https://via.placeholder.com/36"}
+              alt="avatar"
+              width={36}
+              height={36}
+              className="rounded-full object-cover ring-2 ring-[var(--primary)]/30"
+            />
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:text-white hover:bg-white/10 transition-all duration-200"
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Profile Card */}
+        <section className="glass-card p-8 mb-8 animate-fade-in">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <img
+              src={user.picture || "https://via.placeholder.com/100"}
+              alt={`${user.name}'s avatar`}
+              width={100}
+              height={100}
+              className="rounded-full object-cover ring-4 ring-[var(--primary)]/30 shadow-lg shadow-purple-500/20"
+            />
+            <div className="text-center sm:text-left">
+              <h2 className="text-2xl font-bold mb-1">Welcome back, {user.name}!</h2>
+              <p className="text-[var(--text-secondary)]">{user.email}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick Actions */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+          <Link href="/new" className="no-underline">
+            <div className="glass-card p-6 group cursor-pointer hover:border-[var(--primary)]/40 transition-all duration-300">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Create Group</h3>
+                  <p className="text-sm text-[var(--text-secondary)]">Start a new accountability group</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+          <Link href="/discover" className="no-underline">
+            <div className="glass-card p-6 group cursor-pointer hover:border-[var(--accent)]/40 transition-all duration-300">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent)] to-pink-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Discover Groups</h3>
+                  <p className="text-sm text-[var(--text-secondary)]">Find groups that match your goals</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </section>
+
+        {/* Joined Groups */}
+        <section className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <svg className="w-5 h-5 text-[var(--primary-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Your Groups
+          </h2>
+
+          {groupsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="skeleton h-48 rounded-2xl" />
+              ))}
+            </div>
+          ) : !joinedGroups || joinedGroups.length === 0 ? (
+            <div className="glass-card p-12 text-center">
+              <svg className="w-16 h-16 mx-auto mb-4 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <p className="text-[var(--text-secondary)] mb-4">You haven&apos;t joined any groups yet.</p>
+              <Link href="/discover" className="btn-primary no-underline inline-block">
+                Discover Groups
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {joinedGroups.map((group) => (
+                <GroupCard key={group.id} group={group} />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
-
-/* --------------------------------------------
-   Dark-themed inline styles
--------------------------------------------- */
-const styles: { [key: string]: React.CSSProperties } = {
-  pageWrapper: {
-    minHeight: "100vh",
-    backgroundColor: "#121212",
-    color: "#EAEAEA",
-    display: "flex",
-    flexDirection: "column",
-    fontFamily: "'Roboto', sans-serif",
-  },
-  header: {
-    backgroundColor: "#1B1B2F",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "16px 24px",
-  },
-  logoText: {
-    fontSize: "1.8rem",
-    fontWeight: "bold",
-    margin: 0,
-  },
-  userArea: {
-    display: "flex",
-    alignItems: "center",
-  },
-  headerAvatar: {
-    borderRadius: "50%",
-    objectFit: "cover",
-  },
-  container: {
-    maxWidth: "1100px",
-    margin: "0 auto",
-    padding: "20px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "30px",
-  },
-  profileCard: {
-    backgroundColor: "#1F1F3A",
-    borderRadius: "12px",
-    padding: "30px",
-    textAlign: "center",
-    boxShadow: "0 6px 12px rgba(0,0,0,0.3)",
-  },
-  welcomeText: {
-    fontSize: "1.5rem",
-    marginBottom: "20px",
-    fontWeight: "bold",
-  },
-  avatar: {
-    borderRadius: "50%",
-    objectFit: "cover",
-    width: "140px",
-    height: "140px",
-    marginBottom: "20px",
-  },
-  emailText: {
-    marginBottom: "20px",
-    color: "#ccc",
-  },
-  logoutButton: {
-    padding: "10px 20px",
-    backgroundColor: "#FF4B5C",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    transition: "background-color 0.3s ease",
-  },
-  cardRow: {
-    display: "flex",
-    gap: "20px",
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-  card: {
-    backgroundColor: "#1F1F3A",
-    borderRadius: "12px",
-    padding: "20px",
-    textAlign: "center",
-    boxShadow: "0 6px 12px rgba(0,0,0,0.3)",
-    flex: "1 1 250px",
-    maxWidth: "300px",
-  },
-  cardTitle: {
-    fontSize: "1.2rem",
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: "10px",
-  },
-  cardDesc: {
-    color: "#ccc",
-    marginBottom: "15px",
-    fontSize: "14px",
-  },
-  actionButton: {
-    display: "inline-block",
-    padding: "10px 18px",
-    backgroundColor: "#007BFF",
-    color: "#fff",
-    borderRadius: "8px",
-    textDecoration: "none",
-    fontWeight: "bold",
-    transition: "background-color 0.3s ease",
-  },
-  groupsSection: {
-    marginTop: "20px",
-  },
-  subheading: {
-    fontSize: "1.4rem",
-    marginBottom: "16px",
-    fontWeight: "bold",
-  },
-  noGroupsText: {
-    color: "#ccc",
-    textAlign: "center",
-    fontSize: "14px",
-  },
-  groupsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "20px",
-  },
-
-  // Skeleton placeholders for joined groups
-  skeletonGroupCard: {
-    backgroundColor: "#2A2A4A",
-    borderRadius: "10px",
-    height: "120px",
-    animation: "blink 1.2s ease-in-out infinite",
-  },
-
-  // Minimal loading fallback for user profile
-  loadingWrapper: {
-    minHeight: "100vh",
-    backgroundColor: "#121212",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: "#ccc",
-    fontSize: "1rem",
-    fontFamily: "sans-serif",
-    fontStyle: "italic",
-  },
-
-  errorMsg: {
-    color: "red",
-    textAlign: "center",
-    marginTop: "20px",
-    fontSize: "1.2rem",
-  },
-};

@@ -1,1 +1,0 @@
-# this is the requirements.txt file which is used to install the dependencies for the project

@@ -13,7 +13,6 @@ export default function NewGroupPage() {
     if (isCreating) return;
 
     setIsCreating(true);
-    console.log("handleCreateGroup called with:", newGroupData);
     try {
       const response = await axios.post(
         "/api/groups/create",
@@ -21,7 +20,7 @@ export default function NewGroupPage() {
         { withCredentials: true }
       );
       alert(response.data.message || "Group created successfully!");
-      router.push("/profile"); // Redirect to Profile Page
+      router.push("/profile");
     } catch (error: unknown) {
       console.error("Error creating group:", error);
       if (axios.isAxiosError(error) && error.response?.data?.error) {
@@ -35,97 +34,43 @@ export default function NewGroupPage() {
   };
 
   return (
-    <div style={styles.pageContainer}>
-      <div style={styles.header}>
-        <button
-          style={styles.backButton}
-          onClick={() => router.back()}
-          aria-label="Go Back"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            stroke="#fff"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={styles.backIcon}
+    <div className="min-h-screen bg-[var(--bg-primary)]">
+      {/* Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
+        <div className="max-w-3xl mx-auto flex items-center gap-4 px-6 py-4">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+            aria-label="Go Back"
           >
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-        </button>
-        <h1 style={styles.pageHeading}>Create a New Group</h1>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold">Create a New Group</h1>
+        </div>
+      </header>
+
+      <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="glass-card p-8 animate-fade-in">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--success)] to-emerald-700 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <p className="text-[var(--text-secondary)]">
+              Start a new accountability group and crush your goals together!
+            </p>
+          </div>
+
+          <CreateGroup onCreate={handleCreateGroup} />
+        </div>
+
+        <p className="text-center text-sm text-[var(--text-muted)] mt-6 italic">
+          Invite your friends to join and make your group more impactful!
+        </p>
       </div>
-
-      <p style={styles.subHeading}>
-        Start a new accountability group and crush your goals together with your friends!
-      </p>
-
-      <CreateGroup onCreate={handleCreateGroup} />
-
-      <p style={styles.footerNote}>
-        Invite your friends to join and make your group more impactful!
-      </p>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  pageContainer: {
-    width: "100vw",
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    backgroundColor: "#1e1e2f", // Aesthetic blueish-purple background
-    color: "#fff",
-    padding: "40px 20px",
-    boxSizing: "border-box",
-    fontFamily: "Arial, sans-serif",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    marginBottom: "40px",
-  },
-  backButton: {
-    background: "none",
-    border: "none",
-    padding: "5px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    transition: "transform 0.2s",
-    marginRight: "15px",
-  },
-  backButtonHover: {
-    transform: "scale(1.1)",
-  },
-  backIcon: {
-    width: "24px",
-    height: "24px",
-    stroke: "#fff",
-  },
-  pageHeading: {
-    fontSize: "28px",
-    fontWeight: "bold",
-    textAlign: "center",
-    flex: 1,
-    margin: "0",
-    color: "#fff",
-  },
-  subHeading: {
-    fontSize: "18px",
-    color: "#ccc",
-    marginBottom: "30px",
-    textAlign: "center",
-  },
-  footerNote: {
-    fontSize: "14px",
-    color: "#aaa",
-    marginTop: "auto",
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-};

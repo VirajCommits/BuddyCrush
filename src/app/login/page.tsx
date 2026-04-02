@@ -1,64 +1,60 @@
 "use client";
-/* eslint-disable react/no-unescaped-entities */
+
 import React from "react";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <div style={styles.container}>
-      <div style={styles.loginBox}>
-        <h1 style={styles.heading}>Let's get you signed in!</h1>
-        <p style={styles.subheading}>Log in with your Google account to get started</p>
-        <a href="https://pal-crush-2c20ca197e75.herokuapp.com/api/google/login" style={styles.link}>
-          <button style={styles.loginButton}>Log In with Google</button>
-        </a>
+    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)] relative overflow-hidden">
+      {/* Background orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[20%] left-[10%] w-64 h-64 bg-purple-600/15 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-[20%] right-[10%] w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "1.5s" }} />
+      </div>
+
+      {/* Back link */}
+      <div className="relative z-10 p-6">
+        <Link href="/" className="text-[var(--text-secondary)] hover:text-white transition-colors flex items-center gap-2 no-underline text-sm">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to home
+        </Link>
+      </div>
+
+      {/* Login Card */}
+      <div className="relative z-10 flex-1 flex justify-center items-center px-6 pb-20">
+        <div className="glass-card p-10 max-w-md w-full text-center animate-scale-in">
+          {/* Logo */}
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+
+          <h1 className="text-3xl font-bold mb-3">Welcome Back</h1>
+          <p className="text-[var(--text-secondary)] mb-8">
+            Sign in to continue crushing your goals with friends
+          </p>
+
+          <a
+            href="https://pal-crush-2c20ca197e75.herokuapp.com/api/google/login"
+            className="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-xl bg-white text-gray-800 font-semibold text-base hover:bg-gray-100 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg no-underline"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            </svg>
+            Continue with Google
+          </a>
+
+          <p className="mt-6 text-xs text-[var(--text-muted)]">
+            By signing in, you agree to our Terms of Service
+          </p>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    // A subtle gradient background
-    background: "linear-gradient(135deg, #1e1e2f 0%, #1b1b2f 100%)",
-    color: "#fff",
-    fontFamily: "'Roboto', sans-serif",
-  },
-  loginBox: {
-    width: "100%",
-    maxWidth: "420px",
-    backgroundColor: "#2a2a3b",
-    padding: "40px",
-    borderRadius: "10px",
-    boxShadow: "0 8px 20px rgba(0, 0, 0, 0.3)",
-    textAlign: "center",
-  },
-  heading: {
-    fontSize: "2rem", // bigger heading
-    fontWeight: "bold",
-    marginBottom: "16px",
-    color: "#fff",
-  },
-  subheading: {
-    fontSize: "1.2rem",
-    marginBottom: "28px",
-    color: "#cccccc",
-  },
-  link: {
-    textDecoration: "none",
-  },
-  loginButton: {
-    padding: "14px 28px",
-    border: "none",
-    borderRadius: "6px",
-    backgroundColor: "#007bff",
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: "1rem",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-  },
-};

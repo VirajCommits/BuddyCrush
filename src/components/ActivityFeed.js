@@ -1,80 +1,41 @@
+﻿/* eslint-disable @next/next/no-img-element */
 import React from "react";
-/* eslint-disable @next/next/no-img-element */
 
 export default function ActivityFeed({ activity = [] }) {
   if (!Array.isArray(activity) || activity.length === 0) {
-    return <p style={styles.noData}>No recent activity.</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-8 opacity-50">
+        <svg className="w-10 h-10 text-[var(--text-muted)] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <p className="text-sm text-[var(--text-muted)]">No recent activity.</p>
+      </div>
+    );
   }
 
   return (
-    <div style={styles.container}>
-      <ul style={styles.list}>
-        {activity.map((item, index) => (
-          <li key={index} style={styles.listItem}>
-            {/* Avatar */}
-            <img
-              src={item.user_picture || "https://via.placeholder.com/40"}
-              alt={`${item.user_name}'s avatar`}
-              width={40}
-              height={40}
-              style={styles.avatar}
-            />
-            {/* User Info */}
-            <div style={styles.userInfo}>
-              <span style={styles.userName}>{item.user_name}</span>
-              <span style={styles.completed}>
-                Completed{" "}
-                {item.days_ago > 0
-                  ? `${item.days_ago} day(s) ago`
-                  : "today"}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-2">
+      {activity.map((item, index) => (
+        <div key={index} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
+          <img
+            src={item.user_picture || "https://via.placeholder.com/32"}
+            alt={`${item.user_name}'s avatar`}
+            width={32} height={32}
+            className="rounded-full object-cover"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">{item.user_name}</p>
+            <p className="text-xs text-[var(--text-muted)]">
+              Completed {item.days_ago > 0 ? `${item.days_ago} day(s) ago` : "today"}
+            </p>
+          </div>
+          {item.days_ago === 0 && (
+            <span className="text-xs bg-[var(--success)]/20 text-[var(--success)] px-2 py-0.5 rounded-full font-medium">
+              Today
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
-
-const styles = {
-  container: {
-    borderRadius: "8px",
-    maxWidth: "1000px",
-    margin: "20px auto",
-  },
-  noData: {
-    color: "#ddd",
-    textAlign: "center",
-    fontSize: "14px",
-  },
-  list: {
-    listStyleType: "none",
-    padding: "0",
-    margin: "0",
-  },
-  listItem: {
-    display: "flex",
-    alignItems: "center",
-    padding: "10px",
-  },
-  avatar: {
-    borderRadius: "50%",
-    objectFit: "cover",
-    marginRight: "10px",
-    border: "2px solid #444",
-  },
-  userInfo: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  userName: {
-    fontWeight: "600",
-    fontSize: "14px",
-    color: "#fff",
-    marginBottom: "3px",
-  },
-  completed: {
-    fontSize: "12px",
-    color: "#aaa",
-  },
-};

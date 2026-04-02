@@ -1,18 +1,16 @@
-// src/components/GroupCard.js
-/* eslint-disable @next/next/no-img-element */
+﻿/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect } from "react";
 import Leaderboard from "./Leaderboard";
 import ActivityFeed from "./ActivityFeed";
-import { FaComments } from "react-icons/fa";
 import {
   completeDailyTask,
   fetchActivityFeed,
   fetchLeaderboard,
   fetchProfile,
   checkHabitCompletion,
-} from "../utils/api"; // Import checkHabitCompletion API
+} from "../utils/api";
 import GroupChat from "./GroupChat";
 
 export default function GroupCard({ group }) {
@@ -25,18 +23,14 @@ export default function GroupCard({ group }) {
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Fetch current user and check habit completion
   useEffect(() => {
     const fetchCurrentUserAndCheckCompletion = async () => {
       try {
         const response = await fetchProfile();
         const curUser = response.data.user;
         setCurrentUserEmail(curUser.email);
-
-        // Check if the habit is already completed
         const habitStatus = await checkHabitCompletion(group.id);
-        console.log(habitStatus)
-        setAlreadyCompleted(habitStatus.data.completed); // API should return a boolean
+        setAlreadyCompleted(habitStatus.data.completed);
       } catch (err) {
         console.error("Error fetching user or habit status:", err);
         setError("Failed to fetch user or habit state.");
@@ -45,7 +39,6 @@ export default function GroupCard({ group }) {
     fetchCurrentUserAndCheckCompletion();
   }, [group.id]);
 
-  // Fetch activity feed
   useEffect(() => {
     const fetchActivity = async () => {
       setLoading(true);
@@ -54,7 +47,6 @@ export default function GroupCard({ group }) {
         setActivityData(response.data.activity);
       } catch (err) {
         console.error("Error fetching activity:", err);
-        setError("Failed to fetch activity feed.");
       } finally {
         setLoading(false);
       }
@@ -62,7 +54,6 @@ export default function GroupCard({ group }) {
     fetchActivity();
   }, [group.id]);
 
-  // Fetch leaderboard data
   useEffect(() => {
     const getLeaderboard = async () => {
       try {
@@ -70,33 +61,25 @@ export default function GroupCard({ group }) {
         setLeaderboardData(res.data.leaderboard);
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
-        setError("Failed to fetch leaderboard.");
       }
     };
     getLeaderboard();
   }, [group.id]);
 
-  // Handle "Complete Habit" button
   const handleCompleteHabit = async () => {
     setLoading(true);
     try {
       const data = await completeDailyTask(group.id);
       alert(data.message || "Habit completed successfully!");
       setAlreadyCompleted(true);
-
-      // Refresh activity feed
       setActivityData((prev) => [
         ...prev,
         {
-          user_picture: group.members.find(
-            (member) => member.email === currentUserEmail
-          )?.user_image,
+          user_picture: group.members.find((member) => member.email === currentUserEmail)?.user_image,
           completed_date: new Date().toISOString().split("T")[0],
           days_ago: 0,
         },
       ]);
-
-      // Update leaderboard
       setLeaderboardData((prev) =>
         prev.map((user) =>
           user.user_email === currentUserEmail
@@ -106,87 +89,77 @@ export default function GroupCard({ group }) {
       );
     } catch (err) {
       console.error("Error completing habit:", err);
-      setError(
-        err.response?.data?.error || "Failed to complete the daily task."
-      );
+      setError(err.response?.data?.error || "Failed to complete the daily task.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Chat modal toggle handlers
-  const handleChatClick = () => setIsChatOpen(true);
-  const handleCloseChat = () => setIsChatOpen(false);
+  const tabs = [
+    { key: "activity", label: "Activity" },
+    { key: "leaderboard", label: "Leaderboard" },
+    { key: "about", label: "About" },
+  ];
 
   return (
-    <div style={styles.card}>
-      <div style={styles.topHeader}>
-        <h3 style={styles.groupName}>{group.name}</h3>
-      </div>
-
-      <div style={styles.header}>
-        <div style={styles.tabs}>
+    <div className="glass-card overflow-hidden flex flex-col animate-fade-in" style={{ minHeight: "420px" }}>
+      {/* Card Header */}
+      <div className="p-5 pb-0">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-white">{group.name}</h3>
           <button
-            style={{
-              ...styles.tabButton,
-              ...(activeTab === "activity" ? styles.activeTab : {}),
-            }}
-            onClick={() => setActiveTab("activity")}
+            onClick={() => setIsChatOpen(true)}
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-[var(--primary-light)]"
+            title="Open Chat"
           >
-            Activity
-          </button>
-          <button
-            style={{
-              ...styles.tabButton,
-              ...(activeTab === "leaderboard" ? styles.activeTab : {}),
-            }}
-            onClick={() => setActiveTab("leaderboard")}
-          >
-            Leaderboard
-          </button>
-          <button
-            style={{
-              ...styles.tabButton,
-              ...(activeTab === "about" ? styles.activeTab : {}),
-            }}
-            onClick={() => setActiveTab("about")}
-          >
-            About
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
           </button>
         </div>
-        <FaComments
-          style={styles.chatIcon}
-          title="Open Chat"
-          onClick={handleChatClick}
-        />
+
+        {/* Tabs */}
+        <div className="flex gap-1 bg-[var(--bg-primary)]/50 rounded-lg p-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === tab.key
+                  ? "bg-[var(--primary)] text-white shadow-lg shadow-purple-500/20"
+                  : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div style={styles.content}>
+      {/* Tab Content */}
+      <div className="flex-1 p-5 overflow-y-auto" style={{ maxHeight: "280px" }}>
         {loading ? (
-          <div style={styles.loading}>Loading...</div>
+          <div className="flex items-center justify-center h-full">
+            <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : (
           <>
             {activeTab === "activity" && <ActivityFeed activity={activityData} />}
-            {activeTab === "leaderboard" && (
-              <Leaderboard leaderboard={leaderboardData} />
-            )}
+            {activeTab === "leaderboard" && <Leaderboard leaderboard={leaderboardData} />}
             {activeTab === "about" && (
-              <div style={styles.about}>
-                <p style={styles.description}>{group.description}</p>
-                <p style={styles.totalMembers}>
-                  {group.members.length} members
-                </p>
-                <div style={styles.membersList}>
+              <div>
+                <p className="text-[var(--text-secondary)] text-sm mb-4">{group.description}</p>
+                <p className="text-sm text-[var(--text-muted)] mb-3 font-medium">{group.members.length} members</p>
+                <div className="flex flex-wrap gap-2">
                   {group.members.map((member) => (
-                    <div key={member.email} style={styles.member}>
+                    <div key={member.email} className="flex items-center gap-2 bg-white/5 rounded-full pl-1 pr-3 py-1">
                       <img
-                        src={member.user_image || "https://via.placeholder.com/30"}
-                        alt={`${member.name}'s avatar`}
-                        width={30}
-                        height={30}
-                        className="member-avatar"
+                        src={member.user_image || "https://via.placeholder.com/24"}
+                        alt={`${member.name}`}
+                        width={24} height={24}
+                        className="rounded-full object-cover"
                       />
-                      <span style={styles.memberName}>{member.name}</span>
+                      <span className="text-xs text-[var(--text-secondary)]">{member.name}</span>
                     </div>
                   ))}
                 </div>
@@ -196,149 +169,24 @@ export default function GroupCard({ group }) {
         )}
       </div>
 
-      {error && <div style={styles.error}>{error}</div>}
+      {error && <p className="px-5 text-sm text-red-400">{error}</p>}
 
-      <button
-        onClick={handleCompleteHabit}
-        style={{
-          ...styles.completeButton,
-          ...(alreadyCompleted ? styles.completedButton : {}),
-        }}
-        disabled={alreadyCompleted || loading}
-      >
-        {alreadyCompleted
-          ? "Completed Today 🎉"
-          : loading
-          ? "Completing..."
-          : "Complete Habit 🚀"}
-      </button>
+      {/* Complete Habit Button */}
+      <div className="p-5 pt-0">
+        <button
+          onClick={handleCompleteHabit}
+          disabled={alreadyCompleted || loading}
+          className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
+            alreadyCompleted
+              ? "bg-[var(--success)]/20 text-[var(--success)] cursor-default"
+              : "bg-gradient-to-r from-[var(--success)] to-emerald-600 text-white hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-100"
+          }`}
+        >
+          {alreadyCompleted ? "\u2705 Completed Today" : loading ? "Completing..." : "\u{1F680} Complete Habit"}
+        </button>
+      </div>
 
-      {isChatOpen && <GroupChat groupId={group.id} onClose={handleCloseChat} />}
+      {isChatOpen && <GroupChat groupId={group.id} onClose={() => setIsChatOpen(false)} />}
     </div>
   );
 }
-
-// Styles remain unchanged from the original code
-
-
-/** 
- * Light Purplish Themed Inline Styles
- */
-const styles = {
-  topHeader: {
-    marginBottom: "20px",
-  },
-  card: {
-    backgroundColor: "#1c1c1c",
-    borderRadius: "10px",
-    padding: "20px",
-    boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    minHeight: "500px",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "10px",
-  },
-  groupName: {
-    margin: 0,
-    color: "#fff",
-  },
-  tabs: {
-    display: "flex",
-    gap: "10px",
-  },
-  tabButton: {
-    padding: "5px 10px",
-    backgroundColor: "#2c2c2c",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-    fontSize: "0.9rem",
-    transition: "background-color 0.3s",
-  },
-  activeTab: {
-    backgroundColor: "#007bff",
-  },
-  content: {
-    flex: 1,
-    marginBottom: "10px",
-    overflowY: "auto",
-    maxHeight: "350px",
-  },
-  about: {
-    padding: "10px",
-    backgroundColor: "#2c2c3b",
-    borderRadius: "5px",
-  },
-  description: {
-    marginBottom: "10px",
-    color: "#ccc",
-  },
-  totalMembers: {
-    marginBottom: "10px",
-    color: "#ccc",
-    fontWeight: "bold",
-  },
-  membersList: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px",
-  },
-  member: {
-    display: "flex",
-    alignItems: "center",
-    backgroundColor: "#3c3c3c",
-    padding: "5px 10px",
-    borderRadius: "5px",
-  },
-  memberAvatar: {
-    width: "30px",
-    height: "30px",
-    borderRadius: "50%",
-    objectFit: "cover",
-    marginRight: "8px",
-  },
-  memberName: {
-    color: "#fff",
-    fontSize: "0.9rem",
-  },
-  chatIcon: {
-    color: "#007bff",
-    fontSize: "20px",
-    cursor: "pointer",
-    transition: "color 0.3s",
-  },
-  completeButton: {
-    padding: "10px",
-    backgroundColor: "#28a745",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    marginTop: "10px",
-    transition: "background-color 0.3s",
-  },
-  completedButton: {
-    backgroundColor: "#6c757d",
-    cursor: "not-allowed",
-  },
-  error: {
-    color: "red",
-    marginBottom: "10px",
-  },
-  loading: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100%',
-    color: '#fff',
-    fontSize: '1.2rem',
-  },
-};

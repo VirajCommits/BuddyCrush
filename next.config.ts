@@ -1,27 +1,16 @@
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   images: {
     domains: [
-      'lh3.googleusercontent.com',
-      'googleusercontent.com',
-      'via.placeholder.com',
+      "lh3.googleusercontent.com",
+      "googleusercontent.com",
+      "via.placeholder.com",
     ],
+    unoptimized: true,
   },
-  unoptimized: true,
   reactStrictMode: true,
-
-  // Allows generating static HTML
-  output: 'export',
-
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'https://pal-crush-2c20ca197e75.herokuapp.com/api/:path*',
-      },
-    ];
-  },
+  output: "export",
 };
 
-module.exports = nextConfig;
+export default nextConfig;

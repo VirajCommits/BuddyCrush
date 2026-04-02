@@ -403,7 +403,7 @@ def send_message_to_group(group_id):
     # Broadcast to all clients in the group room
     socketio.emit(
         "group_message", 
-        {"user": user["name"], "message": content , "user_image":user_picture}, 
+        {"id": new_message.id, "user": user["name"], "message": content, "user_image": user_picture}, 
         room=group_id
     )
 
@@ -426,6 +426,7 @@ def get_messages(group_id):
 
     messages_data = [
         {
+            "id": m.id,
             "user": m.user_name, 
             "message": m.content,
             "created_at": m.created_at.isoformat(),
@@ -518,9 +519,41 @@ def check_habit_completion(group_id):
     user_email = user["email"]
     today = date.today()
 
+    # Find the user in the database to get their user_id
+    user_obj = User.query.filter_by(email=user_email).first()
+    if not user_obj:
+        return jsonify({"completed": False})
+
     habit_completed = UserActivity.query.filter_by(
+        user_id=user_obj.id,
         group_id=group_id,
         completed_date=today,
     ).first()
 
     return jsonify({"completed": bool(habit_completed)})
+
+def delete_message(message_id):
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    msg = Message.query.get(message_id)
+    if not msg:
+        return jsonify({"error": "Message not found"}), 404
+
+    # Only the message author can delete their own message
+    if msg.user_name != user["name"]:
+        return jsonify({"error": "You can only delete your own messages"}), 403
+
+    group_id = msg.group_id
+    db.session.delete(msg)
+    db.session.commit()
+
+    # Notify connected clients about the deletion
+    socketio.emit(
+        "message_deleted",
+        {"message_id": message_id},
+        room=group_id
+    )
+
+    return jsonify({"message": "Message deleted successfully"})
