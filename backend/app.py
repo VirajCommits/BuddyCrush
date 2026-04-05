@@ -1,25 +1,5 @@
 # app.py
 import os
-from pathlib import Path
-
-from dotenv import load_dotenv
-
-# Resolve repo root via package.json (same logic as views._project_root)
-_BACKEND_DIR = Path(__file__).resolve().parent
-
-
-def _find_project_root() -> Path:
-    here = _BACKEND_DIR
-    for p in [here.parent, *here.parents]:
-        if (p / "package.json").is_file():
-            return p
-    return here.parent
-
-
-_PROJECT_ROOT = _find_project_root()
-load_dotenv(_PROJECT_ROOT / ".env")
-load_dotenv(_BACKEND_DIR / ".env")  # optional; does not override root keys
-load_dotenv(_PROJECT_ROOT / ".env.local", override=True)
 
 # Only monkey-patch when running locally with eventlet (not on Vercel serverless)
 if not os.environ.get("VERCEL"):
@@ -33,10 +13,12 @@ from flask import Flask
 from flask_cors import CORS
 from flask_session import Session
 from flask_migrate import Migrate
+from dotenv import load_dotenv
 from .extensions import db
 from .socketio_instance import socketio
 from .urls import setup_routes
 
+load_dotenv()
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # Dev only
 
 def create_app():
@@ -60,14 +42,11 @@ def create_app():
     app.config["PERMANENT_SESSION_LIFETIME"] = 3600
     app.config["SESSION_USE_SIGNER"] = True
     app.config["SESSION_KEY_PREFIX"] = "session:"
-    app.config["SESSION_COOKIE_HTTPONLY"] = True
-    # Local dev uses http://localhost — Secure cookies would never be sent
-    if os.environ.get("VERCEL"):
-        app.config["SESSION_COOKIE_SECURE"] = True
-        app.config["SESSION_COOKIE_SAMESITE"] = "None"
-    else:
-        app.config["SESSION_COOKIE_SECURE"] = False
-        app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="None",  # if you need cross-origin
+    )
 
     db.init_app(app)
     Migrate(app, db)
@@ -91,4 +70,5 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":
-    socketio.run(app, host="127.0.0.1", port=5000, debug=True, allow_unsafe_werkzeug=True)
+    socketio.init_app(app, cors_allowed_origins="*")
+    socketio.run(app, host="127.0.0.1", port=5000, debug=True)
