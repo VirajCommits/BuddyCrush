@@ -17,6 +17,8 @@ export const fetchLeaderboard = (groupId) =>
 export const fetchActivityFeed = (groupId) =>
   api.get(`/groups/${groupId}/activity`);
 export const checkHabitCompletion = (groupId) =>
-  api.get(`/groups/${groupId}/check-habit`); // Add this function
+  api.get(`/groups/${groupId}/check-habit`);
+export const deleteGroup = (groupId) =>
+  api.delete(`/groups/${groupId}/delete`);
 
 export default api;

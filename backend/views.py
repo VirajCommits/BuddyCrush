@@ -540,6 +540,32 @@ def check_habit_completion(group_id):
 
     return jsonify({"completed": bool(habit_completed)})
 
+def delete_group(group_id):
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    user_obj = User.query.filter_by(email=user["email"]).first()
+    if not user_obj:
+        return jsonify({"error": "User not found"}), 404
+
+    first_member = GroupMember.query.filter_by(group_id=group_id).order_by(GroupMember.id.asc()).first()
+    if not first_member or first_member.user_id != user_obj.id:
+        return jsonify({"error": "Only the group creator can delete this group"}), 403
+
+    Message.query.filter_by(group_id=group_id).delete()
+    UserActivity.query.filter_by(group_id=group_id).delete()
+    GroupMember.query.filter_by(group_id=group_id).delete()
+    db.session.delete(group)
+    db.session.commit()
+
+    return jsonify({"message": f"Group '{group.name}' deleted successfully"})
+
+
 def delete_message(message_id):
     user = session.get("user")
     if not user:

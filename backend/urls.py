@@ -6,6 +6,7 @@ from .views import (
     get_messages,
     join_group,
     create_group,
+    delete_group,
     google_login,
     google_callback,
     logout,
@@ -34,6 +35,7 @@ def setup_routes(app):
         {"path": "/api/groups/<int:group_id>/leaderboard", "view_func": get_leaderboard, "methods": ["GET"]},
         {"path": "/api/groups/<int:group_id>/activity", "view_func": get_group_activity, "methods": ["GET"]},
         {"path": "/api/groups/<int:group_id>/check-habit", "view_func": check_habit_completion, "methods": ["GET"]},
+        {"path": "/api/groups/<int:group_id>/delete", "view_func": delete_group, "methods": ["DELETE"]},
         {"path": "/api/messages/<int:message_id>/delete", "view_func": delete_message, "methods": ["DELETE"]},
         {"path": "/test", "view_func": test_redis, "methods": ["POST" , "GET"]},
     ]

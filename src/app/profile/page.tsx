@@ -3,7 +3,7 @@
 import React, { useCallback } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import GroupCard from "../../components/GroupCard";
 import Link from "next/link";
 
@@ -11,11 +11,13 @@ interface Group {
   id: number;
   name: string;
   description: string;
+  created_by?: string;
   members: Array<{ email: string; user_image?: string; name?: string }>;
 }
 
 export default function Profile() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data: user, error, isLoading } = useQuery({
     queryKey: ["profile"],
@@ -115,7 +117,12 @@ export default function Profile() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {joinedGroups.map((group) => (
-                <GroupCard key={group.id} group={group} />
+                <GroupCard
+                  key={group.id}
+                  group={group}
+                  currentUserEmail={user?.email}
+                  onGroupDeleted={() => queryClient.invalidateQueries({ queryKey: ["joinedGroups"] })}
+                />
               ))}
             </div>
           )}

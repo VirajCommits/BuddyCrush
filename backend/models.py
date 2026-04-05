@@ -42,16 +42,19 @@ class Group(db.Model):
     members = db.relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
 
     def to_dict(self):
+        sorted_members = sorted(self.members, key=lambda m: m.id)
+        creator_email = sorted_members[0].user.email if sorted_members else None
         return {
             "id": self.id,
             "name": self.name,
             "description": self.description,
+            "created_by": creator_email,
             "members": [
                 {
                     "id": member.user.id,
                     "name": member.user.name,
                     "email": member.user.email,
-                    "user_image":member.user.picture
+                    "user_image": member.user.picture
                 }
                 for member in self.members
             ]
