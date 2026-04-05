@@ -14,6 +14,8 @@ import {
 import GroupChat from "./GroupChat";
 import { triggerHabitConfetti } from "../utils/habitConfetti";
 
+const CARD_HEIGHT = 420;
+
 export default function GroupCard({ group }) {
   const [activeTab, setActiveTab] = useState("activity");
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
@@ -99,49 +101,64 @@ export default function GroupCard({ group }) {
   };
 
   const tabs = [
-    { key: "activity", label: "Activity", icon: "🔥" },
-    { key: "leaderboard", label: "Leaderboard", icon: "📊" },
-    { key: "about", label: "About", icon: "ℹ️" },
+    { key: "activity", label: "Activity", icon: "🔥", tooltip: "Recent completions" },
+    { key: "leaderboard", label: "Leaderboard", icon: "📊", tooltip: "Top contributors" },
+    { key: "about", label: "About", icon: "ℹ️", tooltip: "Group info & members" },
   ];
 
   return (
-    <div className="card flex flex-col rounded-[20px] overflow-hidden animate-fade-in" style={{ minHeight: "380px" }}>
-      {/* Card Header */}
-      <div className="p-5 pb-3 pt-5">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <h3 className="text-base font-bold text-[var(--text-primary)] leading-snug pr-1 flex-1 min-w-0">{group.name}</h3>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                </svg>
-                {group.members.length}
-              </span>
-              <svg className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-              </svg>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsChatOpen(true)}
-              className="flex items-center gap-1.5 pl-3 pr-3 py-2 rounded-full bg-[var(--accent)] text-white text-xs font-bold uppercase tracking-wide shadow-md hover:brightness-95 active:scale-[0.98] transition-all"
-              title="Open group chat"
+    <div
+      className="card flex flex-col rounded-[20px]"
+      style={{ height: `${CARD_HEIGHT}px` }}
+    >
+      {/* ─── TOP: Title row ─── */}
+      <div className="px-5 pt-5 pb-2 shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-[15px] font-bold text-[var(--text-primary)] leading-tight truncate">
+            {group.name}
+          </h3>
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              className="flex items-center gap-1 text-xs text-[var(--text-muted)]"
+              title={`${group.members.length} members`}
             >
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
               </svg>
-              Chat
-            </button>
+              {group.members.length}
+            </span>
+            <span title="Public group">
+              <svg className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3" />
+              </svg>
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1.5">
+      {/* ─── CHAT BUTTON ─── */}
+      <div className="px-5 pb-3 shrink-0">
+        <button
+          type="button"
+          onClick={() => setIsChatOpen(true)}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-semibold hover:bg-[var(--accent)]/20 active:scale-[0.99] transition-all"
+          title="Open group chat"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          Open Chat
+        </button>
+      </div>
+
+      {/* ─── TABS ─── */}
+      <div className="px-5 pb-2 shrink-0">
+        <div className="flex gap-1">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
+              title={tab.tooltip}
               className={`tab-pill flex items-center gap-1 ${
                 activeTab === tab.key ? "tab-pill-active" : "tab-pill-inactive"
               }`}
@@ -153,8 +170,8 @@ export default function GroupCard({ group }) {
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 px-5 py-3 overflow-y-auto" style={{ maxHeight: "240px" }}>
+      {/* ─── CONTENT (scrollable, takes remaining space) ─── */}
+      <div className="flex-1 min-h-0 px-5 py-2 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="w-5 h-5 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
@@ -166,8 +183,8 @@ export default function GroupCard({ group }) {
             {activeTab === "about" && (
               <div className="space-y-3">
                 <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{group.description}</p>
-                <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3" />
                   </svg>
                   This group is public
@@ -175,16 +192,17 @@ export default function GroupCard({ group }) {
                 <p className="text-sm font-medium text-[var(--text-primary)]">
                   👥 {group.members.length} members
                 </p>
-                <div className="space-y-1.5">
+                {/* Scrollable members list (max 3 visible, rest scroll) */}
+                <div className="max-h-[90px] overflow-y-auto space-y-1">
                   {group.members.map((member) => (
                     <div key={member.email} className="flex items-center gap-2 py-1">
                       <img
-                        src={member.user_image || "https://via.placeholder.com/28"}
-                        alt={`${member.name}`}
-                        width={28} height={28}
-                        className="rounded-full object-cover"
+                        src={member.user_image || "https://via.placeholder.com/24"}
+                        alt={member.name}
+                        width={24} height={24}
+                        className="rounded-full object-cover shrink-0"
                       />
-                      <span className="text-sm text-[var(--text-secondary)]">{member.name}</span>
+                      <span className="text-sm text-[var(--text-secondary)] truncate">{member.name}</span>
                     </div>
                   ))}
                 </div>
@@ -194,10 +212,10 @@ export default function GroupCard({ group }) {
         )}
       </div>
 
-      {error && <p className="px-5 text-xs text-[var(--danger)]">{error}</p>}
+      {error && <p className="px-5 py-1 text-xs text-[var(--danger)] shrink-0">{error}</p>}
 
-      {/* Bottom Action */}
-      <div className="p-4 pt-2">
+      {/* ─── BOTTOM: Complete habit ─── */}
+      <div className="px-5 pb-4 pt-2 shrink-0">
         {alreadyCompleted ? (
           <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[var(--success-light)] text-[var(--success)]">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -209,14 +227,13 @@ export default function GroupCard({ group }) {
           <button
             onClick={handleCompleteHabit}
             disabled={loading}
-            className="w-full py-3 rounded-xl font-semibold text-sm bg-[var(--success)] text-white hover:bg-[#43A047] transition-colors active:scale-[0.98]"
+            className="w-full py-2.5 rounded-xl font-semibold text-sm bg-[var(--success)] text-white hover:bg-[#43A047] transition-colors active:scale-[0.98]"
           >
             {loading ? "Completing..." : "✓ COMPLETE HABIT"}
           </button>
         )}
       </div>
 
-      {/* Inline Chat Modal */}
       {isChatOpen && (
         <GroupChat
           groupId={group.id}
