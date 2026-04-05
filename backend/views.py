@@ -384,10 +384,10 @@ def send_message_to_group(group_id):
     so that connected Socket.IO clients update instantly.
     """
     user = session.get("user")
-    user_picture = user["picture"]
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
+    user_picture = user["picture"]
     group_id = int(group_id)  # ensure integer
     data = request.get_json()
     content = data.get("message")
@@ -404,14 +404,18 @@ def send_message_to_group(group_id):
     db.session.add(new_message)
     db.session.commit()
 
-    # Broadcast to all clients in the group room
-    socketio.emit(
-        "group_message", 
-        {"id": new_message.id, "user": user["name"], "message": content, "user_image": user_picture}, 
-        room=group_id
-    )
+    payload = {
+        "id": new_message.id,
+        "user": user["name"],
+        "message": content,
+        "user_image": user_picture,
+        "created_at": new_message.created_at.isoformat(),
+    }
 
-    return jsonify({"message": "Message sent successfully!"})
+    # Broadcast to all clients in the group room
+    socketio.emit("group_message", payload, room=group_id)
+
+    return jsonify({"message": "Message sent successfully!", "chat_message": payload})
 
 def get_messages(group_id):
     """

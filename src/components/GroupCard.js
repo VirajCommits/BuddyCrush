@@ -12,6 +12,7 @@ import {
   checkHabitCompletion,
 } from "../utils/api";
 import GroupChat from "./GroupChat";
+import { triggerHabitConfetti } from "../utils/habitConfetti";
 
 export default function GroupCard({ group }) {
   const [activeTab, setActiveTab] = useState("activity");
@@ -69,13 +70,15 @@ export default function GroupCard({ group }) {
   const handleCompleteHabit = async () => {
     setLoading(true);
     try {
-      const data = await completeDailyTask(group.id);
-      alert(data.message || "Habit completed successfully!");
+      await completeDailyTask(group.id);
+      triggerHabitConfetti();
       setAlreadyCompleted(true);
+      const me = group.members.find((member) => member.email === currentUserEmail);
       setActivityData((prev) => [
         ...prev,
         {
-          user_picture: group.members.find((member) => member.email === currentUserEmail)?.user_image,
+          user_name: me?.name || "You",
+          user_picture: me?.user_image,
           completed_date: new Date().toISOString().split("T")[0],
           days_ago: 0,
         },
@@ -102,29 +105,33 @@ export default function GroupCard({ group }) {
   ];
 
   return (
-    <div className="card overflow-hidden flex flex-col animate-fade-in" style={{ minHeight: "380px" }}>
+    <div className="card flex flex-col rounded-[20px] overflow-hidden animate-fade-in" style={{ minHeight: "380px" }}>
       {/* Card Header */}
-      <div className="p-5 pb-3">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="text-base font-bold text-[var(--text-primary)] leading-snug pr-2">{group.name}</h3>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+      <div className="p-5 pb-3 pt-5">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <h3 className="text-base font-bold text-[var(--text-primary)] leading-snug pr-1 flex-1 min-w-0">{group.name}</h3>
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                </svg>
+                {group.members.length}
+              </span>
+              <svg className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
               </svg>
-              {group.members.length}
-            </span>
-            <svg className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-            </svg>
+            </div>
             <button
+              type="button"
               onClick={() => setIsChatOpen(true)}
-              className="p-1.5 rounded-full bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
-              title="Open Chat"
+              className="flex items-center gap-1.5 pl-3 pr-3 py-2 rounded-full bg-[var(--accent)] text-white text-xs font-bold uppercase tracking-wide shadow-md hover:brightness-95 active:scale-[0.98] transition-all"
+              title="Open group chat"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
+              Chat
             </button>
           </div>
         </div>

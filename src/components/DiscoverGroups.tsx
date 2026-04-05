@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, memo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { fetchGroups, joinGroup } from "../utils/api";
 
 type Member = {
@@ -19,6 +20,7 @@ type Group = {
 };
 
 export default function DiscoverGroups() {
+  const queryClient = useQueryClient();
   const [groups, setGroups] = useState<Group[]>([]);
   const [joinedGroups, setJoinedGroups] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string>("");
@@ -58,11 +60,12 @@ export default function DiscoverGroups() {
     try {
       await joinGroup(groupId);
       setJoinedGroups((prev) => new Set(prev).add(groupId));
+      await queryClient.invalidateQueries({ queryKey: ["joinedGroups"] });
     } catch (err) {
       console.error("Error joining group:", err);
       setError("Failed to join the group.");
     }
-  }, []);
+  }, [queryClient]);
 
   if (error) {
     return (

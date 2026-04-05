@@ -40,6 +40,7 @@ export default function GroupChat({ groupId, onClose, isFullPage = false }: Grou
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const POLL_MS = 1000;
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -109,35 +110,35 @@ export default function GroupChat({ groupId, onClose, isFullPage = false }: Grou
     };
   }, [groupId]);
 
-  // Polling fallback when socket isn't connected
+  // Frequent poll keeps other users’ messages visible even if Socket.IO drops (merge by id)
   useEffect(() => {
     const pollMessages = async () => {
       try {
         const res = await fetch(`/api/groups/${groupId}/messages`, { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          setMessages(data.messages || []);
-        }
+        if (!res.ok) return;
+        const data = await res.json();
+        const incoming: Message[] = data.messages || [];
+        setMessages((prev) => {
+          if (
+            incoming.length === prev.length &&
+            incoming.every((m, i) => m.id === prev[i]?.id && m.created_at === prev[i]?.created_at)
+          ) {
+            return prev;
+          }
+          return incoming;
+        });
       } catch (err) { console.error("Polling error:", err); }
     };
 
-    if (!isConnected) {
-      pollMessages();
-      pollingRef.current = setInterval(pollMessages, 3000);
-    } else {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    }
-
+    pollMessages();
+    pollingRef.current = setInterval(pollMessages, POLL_MS);
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
     };
-  }, [isConnected, groupId]);
+  }, [groupId]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -152,13 +153,26 @@ export default function GroupChat({ groupId, onClose, isFullPage = false }: Grou
   }, [groupId]);
 
   const handleSend = async () => {
-    if (!newMessage.trim()) return;
+    const text = newMessage.trim();
+    if (!text) return;
     try {
-      await fetch(`/api/groups/${groupId}/send-message`, {
+      const res = await fetch(`/api/groups/${groupId}/send-message`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        credentials: "include", body: JSON.stringify({ message: newMessage }),
+        credentials: "include", body: JSON.stringify({ message: text }),
       });
-      setNewMessage(""); setShowEmoji(false); inputRef.current?.focus();
+      setNewMessage("");
+      setShowEmoji(false);
+      inputRef.current?.focus();
+      if (res.ok) {
+        const body = await res.json().catch(() => null);
+        const cm = body?.chat_message;
+        if (cm?.id) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === cm.id)) return prev;
+            return [...prev, cm as Message];
+          });
+        }
+      }
     } catch (err) { console.error("Failed to send message:", err); }
   };
 

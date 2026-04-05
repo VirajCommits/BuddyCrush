@@ -2,24 +2,27 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import CreateGroup from "../../components/CreateGroup";
 import axios from "axios";
 
 export default function NewGroupPage() {
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const handleCreateGroup = async (newGroupData: { name: string; description: string }) => {
     if (isCreating) return;
 
     setIsCreating(true);
     try {
-      const response = await axios.post(
+      await axios.post(
         "/api/groups/create",
         newGroupData,
         { withCredentials: true }
       );
-      alert(response.data.message || "Group created successfully!");
+      await queryClient.invalidateQueries({ queryKey: ["joinedGroups"] });
+      await queryClient.refetchQueries({ queryKey: ["joinedGroups"] });
       router.push("/profile");
     } catch (error: unknown) {
       console.error("Error creating group:", error);
