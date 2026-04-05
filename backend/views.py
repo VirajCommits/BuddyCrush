@@ -8,6 +8,10 @@ from .extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
 from .models import Group,GroupMember, User, UserActivity
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date
@@ -15,15 +19,43 @@ from datetime import datetime, date
 next_group_id = 1
 
 
-# Google OAuth Config
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_AUTH_URI = os.getenv("GOOGLE_AUTH_URI")
-GOOGLE_TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+# Google OAuth — only CLIENT_ID + CLIENT_SECRET are required locally; endpoints default to Google’s URLs.
+GOOGLE_AUTH_URI = os.getenv("GOOGLE_AUTH_URI") or "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI") or "https://oauth2.googleapis.com/token"
 
-# OAuth2 Client
-client = WebApplicationClient(GOOGLE_CLIENT_ID)
+
+def _project_root() -> Path:
+    """Directory that contains package.json (repo root), even if this file moves."""
+    here = Path(__file__).resolve().parent
+    for p in [here.parent, *here.parents]:
+        if (p / "package.json").is_file():
+            return p
+    return here.parent
+
+
+def _reload_oauth_env() -> None:
+    """Re-read .env on each OAuth request so new files/values work without guessing cwd."""
+    root = _project_root()
+    load_dotenv(root / ".env")
+    load_dotenv(root / "backend" / ".env")
+    load_dotenv(root / ".env.local", override=True)
+
+
+def _google_creds():
+    cid = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+    # env.example placeholders — treat as unset until user replaces them
+    if cid == "your-client-id.apps.googleusercontent.com":
+        cid = ""
+    if secret == "your-client-secret":
+        secret = ""
+    return cid, secret
+
+
+def _google_redirect_uri():
+    base = (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
+    explicit = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
+    return explicit or f"{base}/api/google/callback"
 
 # In-memory users database (for simplicity)
 users = {}
@@ -43,15 +75,52 @@ def get_google_provider_cfg():
 # View Functions
 
 def google_login():
-    if not GOOGLE_CLIENT_ID or not GOOGLE_AUTH_URI or not GOOGLE_REDIRECT_URI:
-        return jsonify({"error": "Google OAuth not configured. Missing environment variables."}), 500
+    _reload_oauth_env()
+    raw_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    raw_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+    cid, secret = _google_creds()
+    if not cid or not secret:
+        root = _project_root()
+        env_root = root / ".env"
+        env_local = root / ".env.local"
+        env_backend = root / "backend" / ".env"
+        missing = []
+        if not cid:
+            missing.append("GOOGLE_CLIENT_ID")
+        if not secret:
+            missing.append("GOOGLE_CLIENT_SECRET")
+        still_placeholder = (
+            raw_id == "your-client-id.apps.googleusercontent.com"
+            or raw_secret == "your-client-secret"
+        )
+        if still_placeholder and env_root.is_file():
+            main_error = (
+                ".env still has placeholder Google values. Replace GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET "
+                "with your real OAuth client from Google Cloud Console (they are not optional)."
+            )
+        else:
+            main_error = "Google OAuth not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, then restart Flask."
+        return jsonify({
+            "error": main_error,
+            "missing": missing,
+            "project_root": str(root),
+            "env_file_root": str(env_root),
+            "env_file_root_exists": env_root.is_file(),
+            "env_file_local": str(env_local),
+            "env_file_local_exists": env_local.is_file(),
+            "env_file_backend": str(env_backend),
+            "env_file_backend_exists": env_backend.is_file(),
+            "still_using_template_values": still_placeholder,
+            "hint": "Open Google Cloud Console → APIs & Services → Credentials → your OAuth 2.0 Client ID → copy Client ID and Client Secret into .env (same folder as package.json). Save the file; you can try login again without restarting Flask.",
+        }), 500
 
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]
+    oauth = WebApplicationClient(cid)
 
-    request_uri = client.prepare_request_uri(
+    request_uri = oauth.prepare_request_uri(
         authorization_endpoint,
-        redirect_uri=GOOGLE_REDIRECT_URI,
+        redirect_uri=_google_redirect_uri(),
         scope=["openid", "email", "profile"],
     )
     return redirect(request_uri)
@@ -59,36 +128,43 @@ def google_login():
 # views.py
 
 def google_callback():
+    _reload_oauth_env()
+    cid, secret = _google_creds()
+    if not cid or not secret:
+        return jsonify({"error": "Google OAuth not configured."}), 500
+
     code = request.args.get("code")
     if not code:
         return jsonify({"error": "Missing authorization code"}), 400
 
     google_provider_cfg = get_google_provider_cfg()
     token_endpoint = google_provider_cfg["token_endpoint"]
+    oauth = WebApplicationClient(cid)
+    redirect_uri = _google_redirect_uri()
 
     # Exchange the code immediately for tokens
-    token_url, headers, body = client.prepare_token_request(
+    token_url, headers, body = oauth.prepare_token_request(
         token_endpoint,
         authorization_response=request.url,
-        redirect_url=GOOGLE_REDIRECT_URI,
+        redirect_url=redirect_uri,
         code=code,
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
+        client_id=cid,
+        client_secret=secret,
     )
     token_response = requests.post(
         token_url,
         headers=headers,
         data=body,
-        auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
+        auth=(cid, secret),
     )
     
     if token_response.status_code != 200:
         return jsonify({"error": "Token exchange failed, try logging in again."}), 400
 
-    client.parse_request_body_response(token_response.text)
+    oauth.parse_request_body_response(token_response.text)
 
     userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
-    uri, headers, body = client.add_token(userinfo_endpoint)
+    uri, headers, body = oauth.add_token(userinfo_endpoint)
     userinfo_response = requests.get(uri, headers=headers, data=body)
 
     user_info = userinfo_response.json()

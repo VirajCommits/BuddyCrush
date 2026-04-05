@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:flask": "bash scripts/dev-flask.sh",
+    "dev:all": "concurrently -k -n web,api -c cyan,magenta \"npm run dev\" \"npm run dev:flask\"",
+    "setup:python": "python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt",
+    "setup:env": "node -e \"const fs=require('fs');const p='.env';if(!fs.existsSync('env.example')){console.error('env.example not found');process.exit(1);}if(fs.existsSync(p)){console.log('.env already exists');process.exit(0);}fs.copyFileSync('env.example',p);console.log('Created .env from env.example — add Google OAuth values.');\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -27,6 +31,7 @@
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19.0.8",

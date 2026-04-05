@@ -6,15 +6,13 @@ import Link from "next/link";
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-primary)] relative overflow-hidden">
-      {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[20%] left-[10%] w-64 h-64 bg-purple-600/15 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-[20%] right-[10%] w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "1.5s" }} />
+        <div className="absolute top-[20%] left-[10%] w-64 h-64 bg-[var(--primary)]/8 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-[20%] right-[10%] w-80 h-80 bg-[var(--accent)]/6 rounded-full blur-3xl animate-float" style={{ animationDelay: "1.5s" }} />
       </div>
 
-      {/* Back link */}
       <div className="relative z-10 p-6">
-        <Link href="/" className="text-[var(--text-secondary)] hover:text-white transition-colors flex items-center gap-2 no-underline text-sm">
+        <Link href="/" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2 no-underline text-sm">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -22,24 +20,18 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      {/* Login Card */}
       <div className="relative z-10 flex-1 flex justify-center items-center px-6 pb-20">
-        <div className="glass-card p-10 max-w-md w-full text-center animate-scale-in">
-          {/* Logo */}
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center mx-auto mb-6">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+        <div className="card p-10 max-w-md w-full text-center animate-scale-in shadow-lg">
+          <div className="text-5xl mb-6">🐾</div>
 
-          <h1 className="text-3xl font-bold mb-3">Welcome Back</h1>
+          <h1 className="text-3xl font-bold mb-3 text-[var(--text-primary)]">Welcome Back</h1>
           <p className="text-[var(--text-secondary)] mb-8">
             Sign in to continue crushing your goals with friends
           </p>
 
           <a
             href="/api/google/login"
-            className="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-xl bg-white text-gray-800 font-semibold text-base hover:bg-gray-100 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg no-underline"
+            className="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-xl bg-white text-gray-800 font-semibold text-base hover:bg-gray-50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg no-underline border border-gray-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />

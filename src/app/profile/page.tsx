@@ -55,8 +55,8 @@ export default function Profile() {
   if (error || groupsError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
-        <div className="glass-card p-8 text-center">
-          <p className="text-red-400 text-lg">Something went wrong. Please try again.</p>
+        <div className="card p-8 text-center">
+          <p className="text-[var(--danger)] text-lg">Something went wrong. Please try again.</p>
         </div>
       </div>
     );
@@ -66,8 +66,8 @@ export default function Profile() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[var(--text-secondary)] animate-pulse">Loading your profile...</p>
+          <div className="w-10 h-10 border-3 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-[var(--text-secondary)] text-sm">Loading your profile...</p>
         </div>
       </div>
     );
@@ -76,7 +76,7 @@ export default function Profile() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
-        <div className="glass-card p-8 text-center">
+        <div className="card p-8 text-center">
           <p className="text-[var(--text-secondary)]">User not found.</p>
         </div>
       </div>
@@ -86,112 +86,68 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <h1 className="text-xl font-bold gradient-text">BuddyCrush</h1>
-          <div className="flex items-center gap-4">
-            <img
-              src={user.picture || "https://via.placeholder.com/36"}
-              alt="avatar"
-              width={36}
-              height={36}
-              className="rounded-full object-cover ring-2 ring-[var(--primary)]/30"
-            />
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:text-white hover:bg-white/10 transition-all duration-200"
-            >
-              Log Out
-            </button>
+      <header className="pt-6 pb-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-center px-5">
+          <div className="card px-8 py-3 flex items-center gap-2 shadow-md">
+            <span className="text-2xl">🐾</span>
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Buddy Crush</h1>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Profile Card */}
-        <section className="glass-card p-8 mb-8 animate-fade-in">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <img
-              src={user.picture || "https://via.placeholder.com/100"}
-              alt={`${user.name}'s avatar`}
-              width={100}
-              height={100}
-              className="rounded-full object-cover ring-4 ring-[var(--primary)]/30 shadow-lg shadow-purple-500/20"
-            />
-            <div className="text-center sm:text-left">
-              <h2 className="text-2xl font-bold mb-1">Welcome back, {user.name}!</h2>
-              <p className="text-[var(--text-secondary)]">{user.email}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Quick Actions */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          <Link href="/new" className="no-underline">
-            <div className="glass-card p-6 group cursor-pointer hover:border-[var(--primary)]/40 transition-all duration-300">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Create Group</h3>
-                  <p className="text-sm text-[var(--text-secondary)]">Start a new accountability group</p>
-                </div>
-              </div>
-            </div>
-          </Link>
-          <Link href="/discover" className="no-underline">
-            <div className="glass-card p-6 group cursor-pointer hover:border-[var(--accent)]/40 transition-all duration-300">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent)] to-pink-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Discover Groups</h3>
-                  <p className="text-sm text-[var(--text-secondary)]">Find groups that match your goals</p>
-                </div>
-              </div>
-            </div>
-          </Link>
-        </section>
-
-        {/* Joined Groups */}
-        <section className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <svg className="w-5 h-5 text-[var(--primary-light)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            Your Groups
-          </h2>
-
+      <div className="max-w-5xl mx-auto px-5 py-6">
+        {/* Groups Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-in">
           {groupsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[...Array(2)].map((_, i) => (
-                <div key={i} className="skeleton h-48 rounded-2xl" />
+            <>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="skeleton h-80 rounded-[20px]" />
               ))}
-            </div>
-          ) : !joinedGroups || joinedGroups.length === 0 ? (
-            <div className="glass-card p-12 text-center">
-              <svg className="w-16 h-16 mx-auto mb-4 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <p className="text-[var(--text-secondary)] mb-4">You haven&apos;t joined any groups yet.</p>
-              <Link href="/discover" className="btn-primary no-underline inline-block">
-                Discover Groups
-              </Link>
-            </div>
+            </>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {joinedGroups.map((group) => (
-                <GroupCard key={group.id} group={group} />
+            <>
+              {joinedGroups?.map((group, index) => (
+                <div key={group.id} className={`stagger-${Math.min(index + 1, 5)}`} style={{ opacity: 0, animation: `fadeIn 0.4s ease-out ${index * 0.06}s forwards` }}>
+                  <GroupCard group={group} />
+                </div>
               ))}
-            </div>
+
+              {/* Discover Groups Card */}
+              <Link href="/discover" className="no-underline">
+                <div className="card card-interactive flex flex-col items-center justify-center py-14 px-6 cursor-pointer min-h-[200px]">
+                  <div className="w-14 h-14 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-4">
+                    <svg className="w-7 h-7 text-[var(--text-secondary)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold text-[var(--text-secondary)] tracking-wide uppercase">Discover Groups</span>
+                </div>
+              </Link>
+
+              {/* New Group Card */}
+              <Link href="/new" className="no-underline">
+                <div className="card card-interactive flex flex-col items-center justify-center py-14 px-6 cursor-pointer min-h-[200px]">
+                  <div className="w-14 h-14 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-4">
+                    <svg className="w-7 h-7 text-[var(--text-secondary)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold text-[var(--text-secondary)] tracking-wide uppercase">New Group</span>
+                </div>
+              </Link>
+            </>
           )}
-        </section>
+        </div>
+      </div>
+
+      {/* Logout */}
+      <div className="max-w-5xl mx-auto px-5 pb-8 flex justify-end">
+        <button
+          onClick={handleLogout}
+          className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors uppercase tracking-wider"
+        >
+          Logout
+        </button>
       </div>
     </div>
   );

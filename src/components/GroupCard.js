@@ -1,4 +1,4 @@
-﻿/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -12,6 +12,7 @@ import {
   checkHabitCompletion,
 } from "../utils/api";
 import GroupChat from "./GroupChat";
+import Link from "next/link";
 
 export default function GroupCard({ group }) {
   const [activeTab, setActiveTab] = useState("activity");
@@ -96,40 +97,50 @@ export default function GroupCard({ group }) {
   };
 
   const tabs = [
-    { key: "activity", label: "Activity" },
-    { key: "leaderboard", label: "Leaderboard" },
-    { key: "about", label: "About" },
+    { key: "activity", label: "Activity", icon: "🔥" },
+    { key: "leaderboard", label: "Leaderboard", icon: "📊" },
+    { key: "about", label: "About", icon: "ℹ️" },
   ];
 
   return (
-    <div className="glass-card overflow-hidden flex flex-col animate-fade-in" style={{ minHeight: "420px" }}>
+    <div className="card overflow-hidden flex flex-col animate-fade-in" style={{ minHeight: "380px" }}>
       {/* Card Header */}
-      <div className="p-5 pb-0">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-white">{group.name}</h3>
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-[var(--primary-light)]"
-            title="Open Chat"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      <div className="p-5 pb-3">
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="text-base font-bold text-[var(--text-primary)] leading-snug pr-2">{group.name}</h3>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+              </svg>
+              {group.members.length}
+            </span>
+            <svg className="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
             </svg>
-          </button>
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="p-1.5 rounded-full bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
+              title="Open Chat"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-[var(--bg-primary)]/50 rounded-lg p-1">
+        <div className="flex gap-1.5">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200 ${
-                activeTab === tab.key
-                  ? "bg-[var(--primary)] text-white shadow-lg shadow-purple-500/20"
-                  : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5"
+              className={`tab-pill flex items-center gap-1 ${
+                activeTab === tab.key ? "tab-pill-active" : "tab-pill-inactive"
               }`}
             >
+              <span className="text-xs">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
@@ -137,29 +148,37 @@ export default function GroupCard({ group }) {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 p-5 overflow-y-auto" style={{ maxHeight: "280px" }}>
+      <div className="flex-1 px-5 py-3 overflow-y-auto" style={{ maxHeight: "240px" }}>
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <>
             {activeTab === "activity" && <ActivityFeed activity={activityData} />}
             {activeTab === "leaderboard" && <Leaderboard leaderboard={leaderboardData} />}
             {activeTab === "about" && (
-              <div>
-                <p className="text-[var(--text-secondary)] text-sm mb-4">{group.description}</p>
-                <p className="text-sm text-[var(--text-muted)] mb-3 font-medium">{group.members.length} members</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-3">
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{group.description}</p>
+                <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3" />
+                  </svg>
+                  This group is public
+                </div>
+                <p className="text-sm font-medium text-[var(--text-primary)]">
+                  👥 {group.members.length} members
+                </p>
+                <div className="space-y-1.5">
                   {group.members.map((member) => (
-                    <div key={member.email} className="flex items-center gap-2 bg-white/5 rounded-full pl-1 pr-3 py-1">
+                    <div key={member.email} className="flex items-center gap-2 py-1">
                       <img
-                        src={member.user_image || "https://via.placeholder.com/24"}
+                        src={member.user_image || "https://via.placeholder.com/28"}
                         alt={`${member.name}`}
-                        width={24} height={24}
+                        width={28} height={28}
                         className="rounded-full object-cover"
                       />
-                      <span className="text-xs text-[var(--text-secondary)]">{member.name}</span>
+                      <span className="text-sm text-[var(--text-secondary)]">{member.name}</span>
                     </div>
                   ))}
                 </div>
@@ -169,24 +188,35 @@ export default function GroupCard({ group }) {
         )}
       </div>
 
-      {error && <p className="px-5 text-sm text-red-400">{error}</p>}
+      {error && <p className="px-5 text-xs text-[var(--danger)]">{error}</p>}
 
-      {/* Complete Habit Button */}
-      <div className="p-5 pt-0">
-        <button
-          onClick={handleCompleteHabit}
-          disabled={alreadyCompleted || loading}
-          className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
-            alreadyCompleted
-              ? "bg-[var(--success)]/20 text-[var(--success)] cursor-default"
-              : "bg-gradient-to-r from-[var(--success)] to-emerald-600 text-white hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-100"
-          }`}
-        >
-          {alreadyCompleted ? "\u2705 Completed Today" : loading ? "Completing..." : "\u{1F680} Complete Habit"}
-        </button>
+      {/* Bottom Action */}
+      <div className="p-4 pt-2">
+        {alreadyCompleted ? (
+          <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[var(--success-light)] text-[var(--success)]">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+            </svg>
+            <span className="text-sm font-semibold">Completed today</span>
+          </div>
+        ) : (
+          <button
+            onClick={handleCompleteHabit}
+            disabled={loading}
+            className="w-full py-3 rounded-xl font-semibold text-sm bg-[var(--success)] text-white hover:bg-[#43A047] transition-colors active:scale-[0.98]"
+          >
+            {loading ? "Completing..." : "✓ COMPLETE HABIT"}
+          </button>
+        )}
       </div>
 
-      {isChatOpen && <GroupChat groupId={group.id} onClose={() => setIsChatOpen(false)} />}
+      {/* Inline Chat Modal */}
+      {isChatOpen && (
+        <GroupChat
+          groupId={group.id}
+          onClose={() => setIsChatOpen(false)}
+        />
+      )}
     </div>
   );
 }

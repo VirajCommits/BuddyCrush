@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 
@@ -46,7 +46,7 @@ export default function CreateGroup({ onCreate }) {
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isSubmitting}
-          className="w-full bg-[var(--surface)] text-white placeholder-[var(--text-muted)] px-4 py-3 rounded-xl border border-[var(--border)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/50 transition-all text-sm"
+          className="w-full bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] px-4 py-3 rounded-xl border border-[var(--border)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-sm"
         />
       </div>
 
@@ -60,17 +60,17 @@ export default function CreateGroup({ onCreate }) {
           onChange={(e) => setDescription(e.target.value)}
           disabled={isSubmitting}
           rows={4}
-          className="w-full bg-[var(--surface)] text-white placeholder-[var(--text-muted)] px-4 py-3 rounded-xl border border-[var(--border)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/50 transition-all text-sm resize-vertical"
+          className="w-full bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] px-4 py-3 rounded-xl border border-[var(--border)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-sm resize-vertical"
         />
       </div>
 
       <button
         onClick={handleCreate}
         disabled={isSubmitting || !name.trim() || !description.trim()}
-        className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
+        className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
           !isSubmitting && name.trim() && description.trim()
-            ? "bg-gradient-to-r from-[var(--success)] to-emerald-600 text-white hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-100"
-            : "bg-[var(--surface)] text-[var(--text-muted)] cursor-not-allowed"
+            ? "bg-[var(--success)] text-white hover:bg-[#43A047] active:scale-[0.98]"
+            : "bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed"
         }`}
       >
         {isSubmitting ? "Creating..." : "Create Group"}

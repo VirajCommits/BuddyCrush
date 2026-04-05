@@ -35,30 +35,25 @@ export default function NewGroupPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
+      <header className="bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
         <div className="max-w-3xl mx-auto flex items-center gap-4 px-6 py-4">
           <button
             onClick={() => router.back()}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+            className="p-2 rounded-full hover:bg-[var(--bg-secondary)] transition-colors"
             aria-label="Go Back"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-[var(--text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-xl font-bold">Create a New Group</h1>
+          <h1 className="text-lg font-bold text-[var(--text-primary)]">Create a New Group</h1>
         </div>
       </header>
 
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="glass-card p-8 animate-fade-in">
+        <div className="card p-8 animate-fade-in">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--success)] to-emerald-700 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
+            <span className="text-5xl block mb-4">🌟</span>
             <p className="text-[var(--text-secondary)]">
               Start a new accountability group and crush your goals together!
             </p>
@@ -67,7 +62,7 @@ export default function NewGroupPage() {
           <CreateGroup onCreate={handleCreateGroup} />
         </div>
 
-        <p className="text-center text-sm text-[var(--text-muted)] mt-6 italic">
+        <p className="text-center text-sm text-[var(--text-muted)] mt-6">
           Invite your friends to join and make your group more impactful!
         </p>
       </div>

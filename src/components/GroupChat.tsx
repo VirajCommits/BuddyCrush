@@ -1,9 +1,9 @@
-﻿// src/components/GroupChat.tsx
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import socket from "../utils/socket";
+import Link from "next/link";
 
 type Message = {
   id?: number;
@@ -17,6 +17,7 @@ interface GroupChatProps {
   groupId: number;
   currentUser?: string;
   onClose: () => void;
+  isFullPage?: boolean;
 }
 
 const EMOJI_LIST = [
@@ -25,7 +26,7 @@ const EMOJI_LIST = [
   "\u{1F4AC}", "\u{1F440}", "\u{1F680}", "\u{1F4A1}", "\u{1F389}", "\u{1F3C5}", "\u{1F4C8}", "\u{1F48E}", "\u{1F91D}", "\u2728",
 ];
 
-export default function GroupChat({ groupId, onClose }: GroupChatProps) {
+export default function GroupChat({ groupId, onClose, isFullPage = false }: GroupChatProps) {
   const [currentUserName, setCurrentUserName] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -33,10 +34,12 @@ export default function GroupChat({ groupId, onClose }: GroupChatProps) {
   const [showEmoji, setShowEmoji] = useState(false);
   const [hoveredMsg, setHoveredMsg] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -74,20 +77,67 @@ export default function GroupChat({ groupId, onClose }: GroupChatProps) {
     fetchData();
   }, [groupId]);
 
+  // Socket.IO connection + polling fallback
   useEffect(() => {
-    const handleIncomingMessage = (data: Message) => { setMessages((prev) => [...prev, data]); };
+    const handleConnect = () => setIsConnected(true);
+    const handleDisconnect = () => setIsConnected(false);
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    setIsConnected(socket.connected);
+
+    const handleIncomingMessage = (data: Message) => {
+      setMessages((prev) => {
+        if (data.id && prev.some(m => m.id === data.id)) return prev;
+        return [...prev, data];
+      });
+    };
     const handleMessageDeleted = (data: { message_id: number }) => {
       setMessages((prev) => prev.filter((m) => m.id !== data.message_id));
     };
+
     socket.emit("join_group", { group_id: groupId });
     socket.on("group_message", handleIncomingMessage);
     socket.on("message_deleted", handleMessageDeleted);
+
     return () => {
       socket.emit("leave_group", { group_id: groupId });
       socket.off("group_message", handleIncomingMessage);
       socket.off("message_deleted", handleMessageDeleted);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
     };
   }, [groupId]);
+
+  // Polling fallback when socket isn't connected
+  useEffect(() => {
+    const pollMessages = async () => {
+      try {
+        const res = await fetch(`/api/groups/${groupId}/messages`, { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          setMessages(data.messages || []);
+        }
+      } catch (err) { console.error("Polling error:", err); }
+    };
+
+    if (!isConnected) {
+      pollMessages();
+      pollingRef.current = setInterval(pollMessages, 3000);
+    } else {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [isConnected, groupId]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -134,93 +184,138 @@ export default function GroupChat({ groupId, onClose }: GroupChatProps) {
     return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return "Today";
+    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
+
+  const shouldShowDateSeparator = (index: number) => {
+    if (index === 0) return true;
+    const curr = messages[index].created_at;
+    const prev = messages[index - 1].created_at;
+    if (!curr || !prev) return false;
+    return new Date(curr).toDateString() !== new Date(prev).toDateString();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg-primary)]">
+    <div className={`${isFullPage ? "min-h-screen" : "fixed inset-0 z-50"} flex flex-col bg-[var(--bg-primary)]`}>
       {/* Chat Header */}
-      <header className="flex items-center gap-3 px-5 py-4 bg-[var(--bg-secondary)] border-b border-[var(--border)] shrink-0">
-        <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Close Chat">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+      <header className="flex items-center gap-3 px-5 py-3.5 bg-[var(--surface)] border-b border-[var(--border)] shrink-0 shadow-sm">
+        {!isFullPage && (
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-[var(--bg-secondary)] transition-colors" aria-label="Close Chat">
+            <svg className="w-5 h-5 text-[var(--text-primary)]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
         <div className="flex-1">
-          <h2 className="text-lg font-bold">{groupName}</h2>
-          <p className="text-xs text-[var(--text-muted)]">Group Chat</p>
+          <h2 className="text-base font-bold text-[var(--text-primary)]">{groupName}</h2>
+          <p className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-[var(--success)]" : "bg-[var(--accent-warm)]"}`} />
+            {isConnected ? "Connected" : "Syncing..."}
+          </p>
         </div>
-        <div className="w-3 h-3 rounded-full bg-[var(--success)] animate-pulse" title="Connected" />
+        <div className="flex items-center gap-2">
+          {!isFullPage && (
+            <Link
+              href={`/chat/${groupId}`}
+              className="p-2 rounded-full hover:bg-[var(--bg-secondary)] transition-colors"
+              title="Open full chat"
+            >
+              <svg className="w-5 h-5 text-[var(--text-secondary)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+              </svg>
+            </Link>
+          )}
+        </div>
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3">
-            <div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-            <p className="text-[var(--text-muted)] text-sm">Loading messages...</p>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
-            <svg className="w-16 h-16 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <p className="text-[var(--text-muted)]">Be the first to send a message!</p>
-          </div>
-        ) : (
-          messages.map((m, i) => {
-            const isMine = m.user === currentUserName;
-            const showAvatar = i === 0 || messages[i - 1].user !== m.user;
-            return (
-              <div key={m.id || i}
-                className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"} ${showAvatar ? "mt-4" : "mt-0.5"}`}
-                onMouseEnter={() => setHoveredMsg(m.id || i)}
-                onMouseLeave={() => setHoveredMsg(null)}>
-                <div className="w-8 shrink-0">
-                  {showAvatar && (
-                    <img src={m.user_image || "https://via.placeholder.com/32"} alt={`${m.user}'s avatar`}
-                      width={32} height={32} className="rounded-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/32"; }} />
+      <div className="flex-1 overflow-y-auto px-4 py-4 chat-wallpaper relative">
+        <div className="relative z-10">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-3">
+              <div className="w-8 h-8 border-3 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+              <p className="text-[var(--text-muted)] text-sm">Loading messages...</p>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 gap-3">
+              <span className="text-5xl">💬</span>
+              <p className="text-[var(--text-muted)] text-sm">Be the first to send a message!</p>
+            </div>
+          ) : (
+            messages.map((m, i) => {
+              const isMine = m.user === currentUserName;
+              const showAvatar = i === 0 || messages[i - 1].user !== m.user;
+              const showDate = shouldShowDateSeparator(i);
+
+              return (
+                <React.Fragment key={m.id || i}>
+                  {showDate && (
+                    <div className="flex justify-center my-4">
+                      <span className="text-xs font-medium text-[var(--text-muted)] bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
+                        {formatDate(m.created_at)}
+                      </span>
+                    </div>
                   )}
-                </div>
-                <div className={`max-w-[70%] ${isMine ? "items-end" : "items-start"} flex flex-col`}>
-                  {showAvatar && (
-                    <span className={`text-xs font-medium mb-1 ${isMine ? "text-[var(--primary-light)]" : "text-[var(--accent)]"} ${isMine ? "text-right" : "text-left"} w-full`}>
-                      {m.user}
-                    </span>
-                  )}
-                  <div className="flex items-center gap-1.5 group">
-                    {isMine && hoveredMsg === (m.id || i) && (
-                      <button onClick={() => handleDeleteMessage(m.id)}
-                        className="p-1 rounded hover:bg-red-500/20 text-[var(--text-muted)] hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
-                        title="Delete message">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    )}
-                    <div className={`px-4 py-2.5 text-sm leading-relaxed break-words ${
-                      isMine ? "bg-gradient-to-br from-[var(--primary)] to-purple-700 text-white rounded-2xl rounded-br-md"
-                        : "bg-[var(--surface)] text-[var(--text-primary)] rounded-2xl rounded-bl-md border border-[var(--border)]"}`}>
-                      {m.message}
+                  <div
+                    className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"} ${showAvatar ? "mt-3" : "mt-0.5"} animate-message-pop`}
+                    onMouseEnter={() => setHoveredMsg(m.id || i)}
+                    onMouseLeave={() => setHoveredMsg(null)}
+                  >
+                    <div className="w-7 shrink-0">
+                      {showAvatar && !isMine && (
+                        <img src={m.user_image || "https://via.placeholder.com/28"} alt={m.user}
+                          width={28} height={28} className="rounded-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/28"; }} />
+                      )}
+                    </div>
+                    <div className={`max-w-[75%] flex flex-col ${isMine ? "items-end" : "items-start"}`}>
+                      {showAvatar && !isMine && (
+                        <span className="text-[11px] font-medium text-[var(--primary-dark)] mb-0.5 ml-1">
+                          {m.user}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1 group">
+                        {isMine && hoveredMsg === (m.id || i) && (
+                          <button onClick={() => handleDeleteMessage(m.id)}
+                            className="p-1 rounded-full hover:bg-[var(--danger)]/10 text-[var(--text-muted)] hover:text-[var(--danger)] transition-all opacity-0 group-hover:opacity-100"
+                            title="Delete message">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                        <div className={`px-3.5 py-2 text-sm leading-relaxed break-words ${isMine ? "bubble-mine" : "bubble-theirs"}`}>
+                          {m.message}
+                          <span className={`block text-[10px] mt-0.5 ${isMine ? "text-white/60" : "text-[var(--text-muted)]"}`}>
+                            {formatTime(m.created_at)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  {showAvatar && (
-                    <span className={`text-[10px] text-[var(--text-muted)] mt-1 ${isMine ? "text-right" : "text-left"} w-full`}>
-                      {formatTime(m.created_at)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
+                </React.Fragment>
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Emoji Picker */}
       {showEmoji && (
-        <div ref={emojiRef} className="mx-4 mb-2 p-3 glass-card animate-scale-in grid grid-cols-10 gap-1 max-h-36 overflow-y-auto">
+        <div ref={emojiRef} className="mx-4 mb-2 p-3 bg-white rounded-2xl shadow-lg border border-[var(--border)] animate-scale-in grid grid-cols-10 gap-0.5 max-h-36 overflow-y-auto">
           {EMOJI_LIST.map((emoji) => (
             <button key={emoji} onClick={() => handleEmojiClick(emoji)}
-              className="text-xl p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
+              className="text-xl p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer">
               {emoji}
             </button>
           ))}
@@ -228,25 +323,25 @@ export default function GroupChat({ groupId, onClose }: GroupChatProps) {
       )}
 
       {/* Input Area */}
-      <div className="px-4 py-3 bg-[var(--bg-secondary)] border-t border-[var(--border)] shrink-0">
+      <div className="px-4 py-3 bg-[var(--surface)] border-t border-[var(--border)] shrink-0">
         <div className="flex items-center gap-2">
           <button onClick={() => setShowEmoji(!showEmoji)}
-            className={`p-2.5 rounded-xl transition-all ${showEmoji ? "bg-[var(--primary)]/20 text-[var(--primary-light)]" : "hover:bg-white/10 text-[var(--text-muted)]"}`}
+            className={`p-2.5 rounded-full transition-all ${showEmoji ? "bg-[var(--primary)]/10 text-[var(--primary)]" : "hover:bg-[var(--bg-secondary)] text-[var(--text-muted)]"}`}
             title="Emojis">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
           <input ref={inputRef} type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown} placeholder="Type a message..."
-            className="flex-1 bg-[var(--surface)] text-white placeholder-[var(--text-muted)] px-4 py-3 rounded-xl border border-[var(--border)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/50 transition-all text-sm" />
+            className="flex-1 bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] px-4 py-2.5 rounded-full border border-[var(--border)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-sm" />
           <button onClick={handleSend} disabled={!newMessage.trim()}
-            className={`p-3 rounded-xl transition-all ${newMessage.trim()
-              ? "bg-gradient-to-r from-[var(--primary)] to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105"
-              : "bg-[var(--surface)] text-[var(--text-muted)] cursor-not-allowed"}`}
+            className={`p-2.5 rounded-full transition-all ${newMessage.trim()
+              ? "bg-[var(--primary)] text-white hover:bg-[var(--primary-dark)] active:scale-95"
+              : "bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-not-allowed"}`}
             title="Send message">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
             </svg>
           </button>
         </div>

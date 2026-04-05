@@ -1,4 +1,4 @@
-﻿/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useEffect, useState, useCallback, memo } from "react";
@@ -67,8 +67,8 @@ export default function DiscoverGroups() {
   if (error) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="glass-card p-6 text-center">
-          <p className="text-red-400">Error: {error}</p>
+        <div className="card p-6 text-center">
+          <p className="text-[var(--danger)]">Error: {error}</p>
         </div>
       </div>
     );
@@ -79,7 +79,7 @@ export default function DiscoverGroups() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="skeleton h-56 rounded-2xl" />
+            <div key={i} className="skeleton h-56 rounded-[20px]" />
           ))}
         </div>
       </div>
@@ -90,6 +90,7 @@ export default function DiscoverGroups() {
     <div className="max-w-6xl mx-auto px-6 py-8">
       {groups.length === 0 ? (
         <div className="text-center py-20">
+          <span className="text-5xl block mb-4">🔍</span>
           <p className="text-[var(--text-secondary)]">No groups available yet. Create one!</p>
         </div>
       ) : (
@@ -113,27 +114,26 @@ interface GroupItemProps {
 const GroupItem = memo(function GroupItem({ group, isJoined, handleJoin, delay }: GroupItemProps) {
   return (
     <div
-      className="glass-card p-6 flex flex-col justify-between animate-slide-up opacity-0 hover:scale-[1.02] transition-transform duration-300"
+      className="card p-6 flex flex-col justify-between animate-slide-up opacity-0 hover:shadow-md transition-shadow duration-300"
       style={{ animationDelay: `${delay}s`, animationFillMode: "forwards", minHeight: "220px" }}
     >
       <div>
-        <h3 className="text-lg font-bold text-white mb-2">{group.name}</h3>
-        <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] mb-3">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        <h3 className="text-base font-bold text-[var(--text-primary)] mb-2">{group.name}</h3>
+        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mb-3">
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
           </svg>
           {group.members.length} {group.members.length === 1 ? "Member" : "Members"}
         </div>
 
-        {/* Member avatars */}
         <div className="flex items-center mb-4">
           {group.members.slice(0, 5).map((member, index) => (
             <img
               key={index}
               src={member.user_image || "https://via.placeholder.com/32"}
               alt={`${member.name}`}
-              width={32} height={32}
-              className="rounded-full object-cover border-2 border-[var(--bg-primary)] -ml-2 first:ml-0"
+              width={30} height={30}
+              className="rounded-full object-cover border-2 border-[var(--surface)] -ml-2 first:ml-0"
             />
           ))}
           {group.members.length > 5 && (
@@ -145,9 +145,12 @@ const GroupItem = memo(function GroupItem({ group, isJoined, handleJoin, delay }
       </div>
 
       {isJoined(group.id) ? (
-        <button disabled className="w-full py-2.5 rounded-xl text-sm font-semibold bg-[var(--success)]/20 text-[var(--success)] cursor-default">
+        <div className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--success-light)] text-[var(--success)]">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+          </svg>
           Joined
-        </button>
+        </div>
       ) : (
         <button
           onClick={() => handleJoin(group.id)}

@@ -1,4 +1,3 @@
-// src/app/layout.tsx
 "use client";
 
 import React from "react";
@@ -10,8 +9,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <title>BuddyCrush - Crush Your Goals Together</title>
+        <title>Buddy Crush - Crush Your Goals Together</title>
         <meta name="description" content="Join accountability groups, track habits, and compete on leaderboards with friends." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
         <ReactQueryProvider>
