@@ -191,15 +191,9 @@ def create_group():
         "group": new_group.to_dict()
     })
 def discover_groups():
-    # Check if the user is logged in
-    user = session.get("user")
-    if not user:
-        return jsonify({"error": "Not logged in"}), 401
-
-    # Query all groups from the database
     try:
         available_groups = Group.query.all()
-        groups_data = [group.to_dict() for group in available_groups]  # Convert groups to dictionaries
+        groups_data = [group.to_dict() for group in available_groups]
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

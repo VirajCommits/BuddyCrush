@@ -94,7 +94,7 @@ export default function Profile() {
         <div className="flex justify-center">
           <div className="card px-8 py-3 flex items-center gap-2 shadow-md">
             <span className="text-2xl">🐾</span>
-            <h1 className="text-xl font-bold text-[var(--text-primary)]">Buddy Crush</h1>
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Pal Crush</h1>
           </div>
         </div>
       </header>

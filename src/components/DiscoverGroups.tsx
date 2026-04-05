@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, memo } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchGroups, joinGroup } from "../utils/api";
 
@@ -21,8 +22,10 @@ type Group = {
 
 export default function DiscoverGroups() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [joinedGroups, setJoinedGroups] = useState<Set<number>>(new Set());
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -32,19 +35,25 @@ export default function DiscoverGroups() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const profileRes = await fetch("/api/profile", { credentials: "include" });
-        if (!profileRes.ok) throw new Error("Failed to fetch profile.");
-        const profileData = await profileRes.json();
 
         const groupsResponse = await fetchGroups();
         const fetchedGroups = groupsResponse.data.groups;
         setGroups(fetchedGroups);
 
-        if (profileData.user?.email) {
-          const joinedIds = fetchedGroups
-            .filter((group: Group) => group.members.some((m) => m.email === profileData.user.email))
-            .map((g: Group) => g.id);
-          setJoinedGroups(new Set(joinedIds));
+        try {
+          const profileRes = await fetch("/api/profile", { credentials: "include" });
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            if (profileData.user?.email) {
+              setIsLoggedIn(true);
+              const joinedIds = fetchedGroups
+                .filter((group: Group) => group.members.some((m) => m.email === profileData.user.email))
+                .map((g: Group) => g.id);
+              setJoinedGroups(new Set(joinedIds));
+            }
+          }
+        } catch {
+          /* not logged in – that's fine */
         }
       } catch (err: unknown) {
         console.error("Error fetching data:", err);
@@ -57,6 +66,10 @@ export default function DiscoverGroups() {
   }, []);
 
   const handleJoin = useCallback(async (groupId: number) => {
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
     try {
       await joinGroup(groupId);
       setJoinedGroups((prev) => new Set(prev).add(groupId));
@@ -65,7 +78,7 @@ export default function DiscoverGroups() {
       console.error("Error joining group:", err);
       setError("Failed to join the group.");
     }
-  }, [queryClient]);
+  }, [queryClient, isLoggedIn, router]);
 
   if (error) {
     return (
@@ -99,7 +112,7 @@ export default function DiscoverGroups() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groups.map((group, idx) => (
-            <GroupItem key={group.id} group={group} isJoined={isJoined} handleJoin={handleJoin} delay={idx * 0.05} />
+            <GroupItem key={group.id} group={group} isJoined={isJoined} handleJoin={handleJoin} delay={idx * 0.05} isLoggedIn={isLoggedIn} />
           ))}
         </div>
       )}
@@ -112,9 +125,10 @@ interface GroupItemProps {
   isJoined: (groupId: number) => boolean;
   handleJoin: (groupId: number) => Promise<void>;
   delay: number;
+  isLoggedIn: boolean;
 }
 
-const GroupItem = memo(function GroupItem({ group, isJoined, handleJoin, delay }: GroupItemProps) {
+const GroupItem = memo(function GroupItem({ group, isJoined, handleJoin, delay, isLoggedIn }: GroupItemProps) {
   return (
     <div
       className="card p-6 flex flex-col justify-between animate-slide-up opacity-0 hover:shadow-md transition-shadow duration-300"
@@ -159,7 +173,7 @@ const GroupItem = memo(function GroupItem({ group, isJoined, handleJoin, delay }
           onClick={() => handleJoin(group.id)}
           className="w-full py-2.5 rounded-xl text-sm font-semibold btn-primary"
         >
-          Join Group
+          {isLoggedIn ? "Join Group" : "Sign in to Join"}
         </button>
       )}
     </div>

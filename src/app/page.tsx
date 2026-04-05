@@ -17,7 +17,7 @@ export default function Page() {
       <header className="relative z-10 flex justify-between items-center px-8 py-5">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🐾</span>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Buddy Crush</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Pal Crush</h1>
         </div>
         <Link
           href="/login"
@@ -88,7 +88,7 @@ export default function Page() {
       </main>
 
       <footer className="relative z-10 text-center py-8 text-[var(--text-muted)] text-sm">
-        Built with dedication &middot; Buddy Crush &copy; {new Date().getFullYear()}
+        Built with dedication &middot; Pal Crush &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );
