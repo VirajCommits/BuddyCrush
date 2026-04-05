@@ -12,7 +12,6 @@ import {
   checkHabitCompletion,
 } from "../utils/api";
 import GroupChat from "./GroupChat";
-import Link from "next/link";
 
 export default function GroupCard({ group }) {
   const [activeTab, setActiveTab] = useState("activity");

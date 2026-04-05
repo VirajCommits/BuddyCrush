@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
+
 import React, { useCallback } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";

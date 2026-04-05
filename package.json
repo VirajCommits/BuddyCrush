@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:web": "next dev",
+    "dev:api": "python run_dev.py",
+    "dev:next-only": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -27,6 +30,7 @@
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19.0.8",

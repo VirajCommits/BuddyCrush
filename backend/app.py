@@ -42,10 +42,12 @@ def create_app():
     app.config["PERMANENT_SESSION_LIFETIME"] = 3600
     app.config["SESSION_USE_SIGNER"] = True
     app.config["SESSION_KEY_PREFIX"] = "session:"
+    # Local http://localhost cannot use Secure cookies; production keeps Secure + None
+    _prod = bool(os.environ.get("VERCEL")) or os.getenv("FLASK_ENV", "").lower() == "production"
     app.config.update(
-        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_SECURE=_prod,
         SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE="None",  # if you need cross-origin
+        SESSION_COOKIE_SAMESITE="None" if _prod else "Lax",
     )
 
     db.init_app(app)
