@@ -638,6 +638,7 @@ def seed_demo_data():
         "Roth", "Ali", "Shah", "Das", "Rao", "Khan", "Bose", "Dey", "Sen", "Jain",
         "Ito", "Abe", "Kato", "Mori", "Oda", "Hsu", "Lin", "Wu", "Cho", "Yun",
         "Berg", "Holm", "Lind", "Noor", "Bakr", "Hadi", "Omar", "Kaya", "Demir", "Yilmaz",
+        "Vale", "Solis", "Kemp", "Hale",
     ]
 
     SEED_USERS = []
