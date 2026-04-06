@@ -772,3 +772,78 @@ def seed_demo_data():
         "message": "Demo data seeded successfully!",
         "created": stats,
     })
+
+
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "ABC123")
+
+
+def _check_admin():
+    pw = request.args.get("pw") or request.headers.get("X-Admin-Password") or (request.get_json(silent=True) or {}).get("pw")
+    if pw != ADMIN_PASSWORD:
+        return jsonify({"error": "Unauthorized"}), 401
+    return None
+
+
+def admin_list_groups():
+    err = _check_admin()
+    if err:
+        return err
+    groups = Group.query.all()
+    return jsonify({"groups": [
+        {
+            "id": g.id,
+            "name": g.name,
+            "description": g.description,
+            "member_count": len(g.members),
+        }
+        for g in groups
+    ]})
+
+
+def admin_list_users():
+    err = _check_admin()
+    if err:
+        return err
+    users = User.query.all()
+    return jsonify({"users": [
+        {
+            "id": u.id,
+            "name": u.name,
+            "email": u.email,
+            "picture": u.picture,
+            "group_count": len(u.memberships),
+        }
+        for u in users
+    ]})
+
+
+def admin_delete_group(group_id):
+    err = _check_admin()
+    if err:
+        return err
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+    name = group.name
+    Message.query.filter_by(group_id=group_id).delete()
+    UserActivity.query.filter_by(group_id=group_id).delete()
+    GroupMember.query.filter_by(group_id=group_id).delete()
+    db.session.delete(group)
+    db.session.commit()
+    return jsonify({"message": f"Deleted group '{name}'"})
+
+
+def admin_delete_user(user_id):
+    err = _check_admin()
+    if err:
+        return err
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    name = user.name
+    Message.query.filter_by(user_name=user.name).delete()
+    UserActivity.query.filter_by(user_id=user_id).delete()
+    GroupMember.query.filter_by(user_id=user_id).delete()
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": f"Deleted user '{name}'"})

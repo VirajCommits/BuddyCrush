@@ -26,15 +26,43 @@ def create_app():
     app = Flask(__name__, static_folder=None)
     app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_default_secret_key")
 
-    # Database config (Supabase uses POSTGRES_URL_NON_POOLING, Vercel uses POSTGRES_URL)
-    db_url = os.getenv("POSTGRES_URL_NON_POOLING") or os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL") or "sqlite:///app.db"
+    # Database config — prefer non-pooling for DDL, fall back to pooled URL
+    db_url = (
+        os.getenv("POSTGRES_URL_NON_POOLING")
+        or os.getenv("DATABASE_URL")
+        or os.getenv("POSTGRES_URL")
+        or "sqlite:///app.db"
+    )
     db_url = db_url.replace("postgres://", "postgresql://")
-    # Ensure SSL for production PostgreSQL
-    if db_url.startswith("postgresql://") and "sslmode" not in db_url:
-        separator = "&" if "?" in db_url else "?"
-        db_url += f"{separator}sslmode=require"
+
+    if db_url.startswith("postgresql://"):
+        # Supabase session-mode pooler uses port 5432 on *.pooler.supabase.com.
+        # Switch to transaction-mode pooler (port 6543) which handles serverless well.
+        from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+        parsed = urlparse(db_url)
+        if "pooler.supabase.com" in (parsed.hostname or "") and parsed.port == 5432:
+            parsed = parsed._replace(netloc=parsed.hostname + ":6543")
+        qs = parse_qs(parsed.query)
+        if "sslmode" not in qs:
+            qs["sslmode"] = ["require"]
+        db_url = urlunparse(parsed._replace(query=urlencode(qs, doseq=True)))
+
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    if os.environ.get("VERCEL") and db_url.startswith("postgresql"):
+        from sqlalchemy.pool import NullPool
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "poolclass": NullPool,
+            "connect_args": {"options": "-c statement_timeout=10000"},
+        }
+    elif db_url.startswith("postgresql"):
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "pool_size": 2,
+            "max_overflow": 3,
+            "pool_recycle": 300,
+            "pool_pre_ping": True,
+        }
 
     # Session config (use SQLAlchemy backed by Supabase Postgres)
     app.config["SESSION_TYPE"] = "sqlalchemy"
@@ -55,9 +83,12 @@ def create_app():
     Migrate(app, db)
     Session(app)
 
-    # Auto-create tables if they don't exist
+    # Auto-create tables (tolerate transient pool errors on cold start)
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.warning("db.create_all() skipped: %s", e)
 
     # Socket.IO: init for both local and Vercel (HTTP-triggered emits still work)
     socketio.init_app(app, cors_allowed_origins="*", async_mode="eventlet" if not os.environ.get("VERCEL") else "threading")
