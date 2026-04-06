@@ -41,7 +41,13 @@ def create_app():
         from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
         parsed = urlparse(db_url)
         if "pooler.supabase.com" in (parsed.hostname or "") and parsed.port == 5432:
-            parsed = parsed._replace(netloc=parsed.hostname + ":6543")
+            userinfo = ""
+            if parsed.username:
+                userinfo = parsed.username
+                if parsed.password:
+                    userinfo += ":" + parsed.password
+                userinfo += "@"
+            parsed = parsed._replace(netloc=f"{userinfo}{parsed.hostname}:6543")
         qs = parse_qs(parsed.query)
         if "sslmode" not in qs:
             qs["sslmode"] = ["require"]
