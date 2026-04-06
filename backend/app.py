@@ -10,6 +10,7 @@ if not os.environ.get("VERCEL"):
         pass
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_cors import CORS
 from flask_session import Session
 from flask_migrate import Migrate
@@ -66,6 +67,10 @@ def create_app():
 
     # Enable CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+
+    # Vercel terminates TLS; without this, request.url can be http://… and breaks OAuth token exchange
+    if os.environ.get("VERCEL"):
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     return app
 

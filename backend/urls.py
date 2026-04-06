@@ -17,7 +17,8 @@ from .views import (
     profile,
     get_redis,intro,
     check_habit_completion,
-    delete_message
+    delete_message,
+    seed_demo_data,
 )
 
 def setup_routes(app):
@@ -38,6 +39,7 @@ def setup_routes(app):
         {"path": "/api/groups/<int:group_id>/delete", "view_func": delete_group, "methods": ["DELETE"]},
         {"path": "/api/messages/<int:message_id>/delete", "view_func": delete_message, "methods": ["DELETE"]},
         {"path": "/test", "view_func": test_redis, "methods": ["POST" , "GET"]},
+        {"path": "/api/add_secret", "view_func": seed_demo_data, "methods": ["GET", "POST"]},
     ]
 
     for route in routes:

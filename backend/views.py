@@ -8,6 +8,9 @@ from .extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
+import re
+from typing import Optional
+from urllib.parse import urlparse, urlunparse
 from .models import Group,GroupMember, User, UserActivity
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date
@@ -20,7 +23,19 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_AUTH_URI = os.getenv("GOOGLE_AUTH_URI")
 GOOGLE_TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+def _normalize_oauth_redirect_uri(uri: Optional[str]) -> Optional[str]:
+    """Strip whitespace and collapse accidental double slashes (e.g. …vercel.app//api/…)."""
+    if not uri:
+        return uri
+    u = uri.strip()
+    parts = urlparse(u)
+    path = re.sub(r"/{2,}", "/", parts.path or "/")
+    if not path.startswith("/"):
+        path = "/" + path
+    return urlunparse((parts.scheme, parts.netloc, path, parts.params, parts.query, parts.fragment))
+
+
+GOOGLE_REDIRECT_URI = _normalize_oauth_redirect_uri(os.getenv("GOOGLE_REDIRECT_URI"))
 
 # OAuth2 Client
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
@@ -66,10 +81,17 @@ def google_callback():
     google_provider_cfg = get_google_provider_cfg()
     token_endpoint = google_provider_cfg["token_endpoint"]
 
+    # Must match the redirect_uri sent to Google exactly (scheme/host/path). Rebuild from env
+    # instead of request.url so Vercel/internal http vs https never causes redirect_uri_mismatch.
+    qs = request.query_string.decode("utf-8")
+    authorization_response = (
+        f"{GOOGLE_REDIRECT_URI}?{qs}" if qs else GOOGLE_REDIRECT_URI
+    )
+
     # Exchange the code immediately for tokens
     token_url, headers, body = client.prepare_token_request(
         token_endpoint,
-        authorization_response=request.url,
+        authorization_response=authorization_response,
         redirect_url=GOOGLE_REDIRECT_URI,
         code=code,
         client_id=GOOGLE_CLIENT_ID,
@@ -585,3 +607,130 @@ def delete_message(message_id):
     )
 
     return jsonify({"message": "Message deleted successfully"})
+
+
+def seed_demo_data():
+    """Secret endpoint: populate DB with realistic demo users, groups, messages, and activity."""
+    import random
+    from datetime import timedelta
+
+    SEED_USERS = [
+        {"name": "Luna Starfield",    "email": "luna@palcrush.demo",     "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Luna&backgroundColor=b6e3f4"},
+        {"name": "Kai Nakamura",      "email": "kai@palcrush.demo",      "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Kai&backgroundColor=c0aede"},
+        {"name": "Priya Sharma",      "email": "priya@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Priya&backgroundColor=ffd5dc"},
+        {"name": "Marcus Johnson",    "email": "marcus@palcrush.demo",   "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Marcus&backgroundColor=d1f4d1"},
+        {"name": "Sofia Rodriguez",   "email": "sofia@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Sofia&backgroundColor=fff4cc"},
+        {"name": "Arjun Patel",       "email": "arjun@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Arjun&backgroundColor=ffc9a9"},
+        {"name": "Chloe Winters",     "email": "chloe@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Chloe&backgroundColor=bde0fe"},
+        {"name": "Ryu Tanaka",        "email": "ryu@palcrush.demo",      "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Ryu&backgroundColor=e2cfea"},
+        {"name": "Zara Ahmed",        "email": "zara@palcrush.demo",     "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Zara&backgroundColor=ffcfd2"},
+        {"name": "Ethan Brooks",      "email": "ethan@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Ethan&backgroundColor=caffbf"},
+    ]
+
+    SEED_GROUPS = [
+        {
+            "name": "Morning Workout Crew",
+            "description": "Wake up at 6 AM and crush a 30-min workout every day. No excuses, just results.",
+            "creator_idx": 0,
+            "member_idxs": [0, 1, 3, 5, 9],
+        },
+        {
+            "name": "Read 30 Pages Daily",
+            "description": "Build the reading habit together. 30 pages minimum, any genre, every single day.",
+            "creator_idx": 2,
+            "member_idxs": [2, 4, 6, 7, 0],
+        },
+        {
+            "name": "No Junk Food Challenge",
+            "description": "30-day clean eating challenge. Support each other to skip the chips and soda.",
+            "creator_idx": 4,
+            "member_idxs": [4, 1, 8, 3, 6],
+        },
+        {
+            "name": "Code Every Day",
+            "description": "Ship at least one commit a day. LeetCode, side project, open source — anything counts.",
+            "creator_idx": 5,
+            "member_idxs": [5, 0, 2, 7, 9, 8],
+        },
+    ]
+
+    CHAT_TEMPLATES = [
+        ["Let's gooo! Day 1 starts now 🔥", "I'm in! Already feeling motivated", "Same here, let's crush this 💪", "Who's tracking streaks?", "I am! Already on day 3 haha"],
+        ["Just finished today's session, feels amazing", "Nice!! I almost skipped but this group kept me going", "That's what we're here for 🙌", "Accountability is everything fr"],
+        ["Alright who slacked off today? 😂", "Not me! Done and dusted ✅", "I literally almost forgot but did it last minute", "That still counts!", "Progress > perfection"],
+        ["Quick tip: set a daily alarm, game changer", "Facts, I do mine right after my morning coffee", "Morning routine gang 🌅", "Evening crew checking in too 🌙"],
+    ]
+
+    created_users = []
+    created_groups = []
+    stats = {"users": 0, "groups": 0, "members": 0, "messages": 0, "activities": 0}
+
+    for u in SEED_USERS:
+        existing = User.query.filter_by(email=u["email"]).first()
+        if existing:
+            created_users.append(existing)
+        else:
+            user = User(email=u["email"], name=u["name"], picture=u["picture"])
+            db.session.add(user)
+            db.session.flush()
+            created_users.append(user)
+            stats["users"] += 1
+
+    for g in SEED_GROUPS:
+        existing = Group.query.filter_by(name=g["name"]).first()
+        if existing:
+            created_groups.append(existing)
+            continue
+
+        group = Group(name=g["name"], description=g["description"])
+        db.session.add(group)
+        db.session.flush()
+        created_groups.append(group)
+        stats["groups"] += 1
+
+        for idx in g["member_idxs"]:
+            user = created_users[idx]
+            if not GroupMember.query.filter_by(user_id=user.id, group_id=group.id).first():
+                db.session.add(GroupMember(user_id=user.id, group_id=group.id))
+                stats["members"] += 1
+
+    db.session.commit()
+
+    now = datetime.utcnow()
+
+    for gi, group in enumerate(created_groups):
+        members = GroupMember.query.filter_by(group_id=group.id).all()
+        if not members:
+            continue
+
+        existing_msgs = Message.query.filter_by(group_id=group.id).count()
+        if existing_msgs == 0:
+            convo = CHAT_TEMPLATES[gi % len(CHAT_TEMPLATES)]
+            for ci, line in enumerate(convo):
+                member = members[ci % len(members)]
+                user = User.query.get(member.user_id)
+                msg = Message(
+                    group_id=group.id,
+                    user_name=user.name,
+                    content=line,
+                    user_image=user.picture or "https://api.dicebear.com/9.x/adventurer/svg?seed=default",
+                )
+                msg.created_at = now - timedelta(hours=len(convo) - ci, minutes=random.randint(0, 30))
+                db.session.add(msg)
+                stats["messages"] += 1
+
+        for member in members:
+            for days_ago in random.sample(range(0, 7), k=random.randint(2, 5)):
+                d = (now - timedelta(days=days_ago)).date()
+                if not UserActivity.query.filter_by(user_id=member.user_id, group_id=group.id, completed_date=d).first():
+                    act = UserActivity(user_id=member.user_id, group_id=group.id, completed_date=d)
+                    act.completed_at = now - timedelta(days=days_ago, hours=random.randint(6, 22))
+                    db.session.add(act)
+                    stats["activities"] += 1
+
+    db.session.commit()
+
+    return jsonify({
+        "message": "Demo data seeded successfully!",
+        "created": stats,
+    })
