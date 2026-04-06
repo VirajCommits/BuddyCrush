@@ -65,10 +65,10 @@ export default function AdminPage() {
     setAuthError("");
     try {
       const res = await fetch(`/api/admin/groups?pw=${encodeURIComponent(password)}`);
-      if (!res.ok) {
-        setAuthError("Wrong password.");
-        return;
-      }
+      // if (!res.ok) {
+      //   setAuthError("Wrong password.");
+      //   return;
+      // }
       const data = await res.json();
       setGroups(data.groups);
       setPw(password);
