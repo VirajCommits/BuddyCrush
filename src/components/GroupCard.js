@@ -10,6 +10,7 @@ import {
   fetchLeaderboard,
   checkHabitCompletion,
   deleteGroup,
+  leaveGroup,
 } from "../utils/api";
 import { triggerHabitConfetti } from "../utils/habitConfetti";
 import Link from "next/link";
@@ -96,6 +97,17 @@ export default function GroupCard({ group, currentUserEmail, onGroupDeleted }) {
     } catch (err) {
       console.error("Delete group failed:", err);
       setError(err.response?.data?.error || "Failed to delete group.");
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!window.confirm(`Leave "${group.name}"?`)) return;
+    try {
+      await leaveGroup(group.id);
+      onGroupDeleted?.();
+    } catch (err) {
+      console.error("Leave group failed:", err);
+      setError(err.response?.data?.error || "Failed to leave group.");
     }
   };
 
@@ -194,13 +206,21 @@ export default function GroupCard({ group, currentUserEmail, onGroupDeleted }) {
                       )}
                     </div>
 
-                    {group.created_by === currentUserEmail && (
+                    {group.created_by === currentUserEmail ? (
                       <button
                         onClick={handleDeleteGroup}
                         className="w-full mt-3 py-2 rounded-xl text-xs font-semibold text-[var(--danger)] bg-[var(--danger)]/8 hover:bg-[var(--danger)]/15 transition-colors flex items-center justify-center gap-1.5"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         Delete Group
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleLeaveGroup}
+                        className="w-full mt-3 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        Leave Group
                       </button>
                     )}
                   </div>

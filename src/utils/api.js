@@ -20,5 +20,7 @@ export const checkHabitCompletion = (groupId) =>
   api.get(`/groups/${groupId}/check-habit`);
 export const deleteGroup = (groupId) =>
   api.delete(`/groups/${groupId}/delete`);
+export const leaveGroup = (groupId) =>
+  api.post(`/groups/${groupId}/leave`);
 
 export default api;

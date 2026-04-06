@@ -582,6 +582,34 @@ def delete_group(group_id):
     return jsonify({"message": f"Group '{group.name}' deleted successfully"})
 
 
+def leave_group(group_id):
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+    user_obj = User.query.filter_by(email=user["email"]).first()
+    if not user_obj:
+        return jsonify({"error": "User not found"}), 404
+
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    membership = GroupMember.query.filter_by(user_id=user_obj.id, group_id=group_id).first()
+    if not membership:
+        return jsonify({"error": "You are not a member of this group"}), 400
+
+    first_member = GroupMember.query.filter_by(group_id=group_id).order_by(GroupMember.id.asc()).first()
+    if first_member and first_member.user_id == user_obj.id:
+        return jsonify({"error": "Group creators cannot leave. Delete the group instead."}), 403
+
+    UserActivity.query.filter_by(user_id=user_obj.id, group_id=group_id).delete()
+    db.session.delete(membership)
+    db.session.commit()
+
+    return jsonify({"message": f"Left group '{group.name}' successfully"})
+
+
 def delete_message(message_id):
     user = session.get("user")
     if not user:

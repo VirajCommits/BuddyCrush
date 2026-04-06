@@ -44,7 +44,10 @@ export default function Profile() {
     gcTime: 30 * 60 * 1000,
   });
 
-  const { data: allGroups } = useQuery<Group[]>({
+  const {
+    data: allGroups,
+    isLoading: allGroupsLoading,
+  } = useQuery<Group[]>({
     queryKey: ["allGroups"],
     queryFn: async () => {
       const response = await axios.get("/api/groups/discover", { withCredentials: true });
@@ -52,31 +55,23 @@ export default function Profile() {
     },
     enabled: !!user,
     staleTime: 60 * 1000,
-  });
-
-  const {
-    data: joinedGroups,
-    error: groupsError,
-    isLoading: groupsLoading,
-  } = useQuery<Group[]>({
-    queryKey: ["joinedGroups", user?.email],
-    queryFn: async () => {
-      const groups: Group[] = allGroups || [];
-      return groups.filter((g) => g.members.some((m) => m.email === user?.email));
-    },
-    enabled: !!user && !!allGroups,
-    staleTime: 60 * 1000,
-    gcTime: 30 * 60 * 1000,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 
-  const isNewUser = !groupsLoading && (!joinedGroups || joinedGroups.length === 0);
+  const joinedGroups = useMemo(() => {
+    if (!allGroups || !user) return undefined;
+    return allGroups.filter((g) => g.members.some((m) => m.email === user.email));
+  }, [allGroups, user]);
+
+  const groupsError = null;
+  const groupsLoading = !user || allGroupsLoading || joinedGroups === undefined;
+  const isNewUser = !groupsLoading && joinedGroups !== undefined && joinedGroups.length === 0;
 
   useEffect(() => {
     if (isNewUser && !welcomeFired) {
       setWelcomeFired(true);
-      setTimeout(() => triggerHabitConfetti(), 600);
+      setTimeout(() => triggerHabitConfetti(), 1500);
     }
   }, [isNewUser, welcomeFired]);
 
@@ -104,7 +99,6 @@ export default function Profile() {
     try {
       await axios.post(`/api/groups/${groupId}/join`, {}, { withCredentials: true });
       await queryClient.invalidateQueries({ queryKey: ["allGroups"] });
-      await queryClient.invalidateQueries({ queryKey: ["joinedGroups"] });
       triggerHabitConfetti();
     } catch (err) {
       console.error("Join failed:", err);
@@ -321,7 +315,7 @@ export default function Profile() {
                     key={group.id}
                     group={group}
                     currentUserEmail={user?.email}
-                    onGroupDeleted={() => queryClient.invalidateQueries({ queryKey: ["joinedGroups"] })}
+                    onGroupDeleted={() => queryClient.invalidateQueries({ queryKey: ["allGroups"] })}
                   />
                 ))}
               </div>
