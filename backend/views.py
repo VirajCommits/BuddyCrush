@@ -610,60 +610,96 @@ def delete_message(message_id):
 
 
 def seed_demo_data():
-    """Secret endpoint: populate DB with realistic demo users, groups, messages, and activity."""
+    """Secret endpoint: populate DB with 100 unique users, 10 groups (no shared members)."""
     import random
     from datetime import timedelta
 
-    SEED_USERS = [
-        {"name": "Luna Starfield",    "email": "luna@palcrush.demo",     "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Luna&backgroundColor=b6e3f4"},
-        {"name": "Kai Nakamura",      "email": "kai@palcrush.demo",      "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Kai&backgroundColor=c0aede"},
-        {"name": "Priya Sharma",      "email": "priya@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Priya&backgroundColor=ffd5dc"},
-        {"name": "Marcus Johnson",    "email": "marcus@palcrush.demo",   "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Marcus&backgroundColor=d1f4d1"},
-        {"name": "Sofia Rodriguez",   "email": "sofia@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Sofia&backgroundColor=fff4cc"},
-        {"name": "Arjun Patel",       "email": "arjun@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Arjun&backgroundColor=ffc9a9"},
-        {"name": "Chloe Winters",     "email": "chloe@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Chloe&backgroundColor=bde0fe"},
-        {"name": "Ryu Tanaka",        "email": "ryu@palcrush.demo",      "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Ryu&backgroundColor=e2cfea"},
-        {"name": "Zara Ahmed",        "email": "zara@palcrush.demo",     "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Zara&backgroundColor=ffcfd2"},
-        {"name": "Ethan Brooks",      "email": "ethan@palcrush.demo",    "picture": "https://api.dicebear.com/9.x/adventurer/svg?seed=Ethan&backgroundColor=caffbf"},
+    FIRST_NAMES = [
+        "Luna", "Kai", "Priya", "Marcus", "Sofia", "Arjun", "Chloe", "Ryu", "Zara", "Ethan",
+        "Mia", "Leo", "Anya", "Omar", "Isla", "Yuki", "Nora", "Dante", "Sana", "Felix",
+        "Ivy", "Hugo", "Leila", "Axel", "Tara", "Nico", "Mira", "Ash", "Rhea", "Jude",
+        "Lena", "Finn", "Dina", "Cole", "Sia", "Kian", "Vera", "Nash", "Iris", "Reid",
+        "Maya", "Troy", "Ayla", "Ezra", "Nina", "Theo", "Rosa", "Gio", "Elle", "Bram",
+        "Wren", "Sage", "Nova", "Cruz", "Jade", "Beck", "Thea", "Jay", "Skye", "Zane",
+        "Alma", "Penn", "Nila", "Cade", "Shay", "Levi", "Hana", "Beau", "Opal", "Knox",
+        "Tess", "Arlo", "Lina", "Drew", "Faye", "Koa", "Nell", "Wade", "Gwen", "Lane",
+        "Kit", "Jolie", "Cyrus", "Blair", "Quinn", "Jett", "Dove", "Rowan", "Ivy", "Atlas",
+        "Pia", "Hayes", "Maren", "Ellis", "Ruth", "Bodhi", "Fern", "Clay", "Cora", "Oren",
     ]
+
+    LAST_NAMES = [
+        "Starfield", "Nakamura", "Sharma", "Johnson", "Rodriguez", "Patel", "Winters", "Tanaka",
+        "Ahmed", "Brooks", "Chen", "Santos", "Kim", "Okafor", "Johansson", "Morales", "Nguyen",
+        "Andersen", "Sato", "Garcia", "Lee", "Martin", "Wilson", "Taylor", "Moore", "Clark",
+        "Hill", "Scott", "Adams", "Baker", "Diaz", "Flores", "Cruz", "Reyes", "Rivera", "Gomez",
+        "Murphy", "Cook", "Bell", "Reed", "Ward", "Ross", "Burns", "Price", "Stone", "Webb",
+        "Fox", "Gray", "Hart", "Lane", "Day", "West", "Snow", "Park", "Lowe", "Dunn",
+        "Blake", "Chase", "Wolfe", "Frost", "Nash", "Pope", "Bauer", "Lund", "Vega", "Mora",
+        "Roth", "Ali", "Shah", "Das", "Rao", "Khan", "Bose", "Dey", "Sen", "Jain",
+        "Ito", "Abe", "Kato", "Mori", "Oda", "Hsu", "Lin", "Wu", "Cho", "Yun",
+        "Berg", "Holm", "Lind", "Noor", "Bakr", "Hadi", "Omar", "Kaya", "Demir", "Yilmaz",
+    ]
+
+    SEED_USERS = []
+    for i in range(100):
+        first = FIRST_NAMES[i]
+        last = LAST_NAMES[i]
+        slug = f"{first.lower()}{i}"
+        email = f"{slug}@palcrush.demo"
+        SEED_USERS.append({
+            "name": f"{first} {last}",
+            "email": email,
+            "picture": f"/faces/face_{i:03d}.jpg",
+        })
 
     SEED_GROUPS = [
-        {
-            "name": "Morning Workout Crew",
-            "description": "Wake up at 6 AM and crush a 30-min workout every day. No excuses, just results.",
-            "creator_idx": 0,
-            "member_idxs": [0, 1, 3, 5, 9],
-        },
-        {
-            "name": "Read 30 Pages Daily",
-            "description": "Build the reading habit together. 30 pages minimum, any genre, every single day.",
-            "creator_idx": 2,
-            "member_idxs": [2, 4, 6, 7, 0],
-        },
-        {
-            "name": "No Junk Food Challenge",
-            "description": "30-day clean eating challenge. Support each other to skip the chips and soda.",
-            "creator_idx": 4,
-            "member_idxs": [4, 1, 8, 3, 6],
-        },
-        {
-            "name": "Code Every Day",
-            "description": "Ship at least one commit a day. LeetCode, side project, open source — anything counts.",
-            "creator_idx": 5,
-            "member_idxs": [5, 0, 2, 7, 9, 8],
-        },
+        {"name": "Morning Workout Crew",       "description": "Wake up at 6 AM and crush a 30-min workout every day. No excuses, just results.", "start": 0},
+        {"name": "Read 30 Pages Daily",         "description": "Build the reading habit together. 30 pages minimum, any genre, every single day.", "start": 10},
+        {"name": "No Junk Food Challenge",      "description": "30-day clean eating challenge. Support each other to skip the chips and soda.", "start": 20},
+        {"name": "Code Every Day",              "description": "Ship at least one commit a day. LeetCode, side project, open source — anything counts.", "start": 30},
+        {"name": "Meditate 10 Minutes",         "description": "Daily mindfulness practice. 10 minutes of calm before the chaos begins.", "start": 40},
+        {"name": "No Social Media After 9 PM",  "description": "Put the phone down and reclaim your evenings. Better sleep, better mornings.", "start": 50},
+        {"name": "Walk 10,000 Steps",           "description": "Hit 10K steps every day rain or shine. Your future self will thank you.", "start": 60},
+        {"name": "Journal Before Bed",          "description": "Write 3 things you're grateful for and 1 thing you learned. Every night.", "start": 70},
+        {"name": "Cold Shower Warriors",        "description": "End every shower with 60 seconds of cold water. Builds discipline and resilience.", "start": 80},
+        {"name": "Learn a New Language",        "description": "15 minutes of Duolingo or flashcards daily. Consistency beats intensity.", "start": 90},
     ]
 
-    CHAT_TEMPLATES = [
-        ["Let's gooo! Day 1 starts now 🔥", "I'm in! Already feeling motivated", "Same here, let's crush this 💪", "Who's tracking streaks?", "I am! Already on day 3 haha"],
-        ["Just finished today's session, feels amazing", "Nice!! I almost skipped but this group kept me going", "That's what we're here for 🙌", "Accountability is everything fr"],
-        ["Alright who slacked off today? 😂", "Not me! Done and dusted ✅", "I literally almost forgot but did it last minute", "That still counts!", "Progress > perfection"],
-        ["Quick tip: set a daily alarm, game changer", "Facts, I do mine right after my morning coffee", "Morning routine gang 🌅", "Evening crew checking in too 🌙"],
+    CHAT_POOLS = [
+        [
+            "Let's gooo! Day 1 starts now 🔥", "I'm in! Already feeling motivated",
+            "Same here, let's crush this 💪", "Who's tracking streaks?",
+            "I am! Already on day 3 haha", "This group is the best thing ever",
+            "Accountability is everything fr", "Don't let me slack guys 😤",
+        ],
+        [
+            "Just finished today's session, feels amazing", "Nice!! I almost skipped but this group kept me going",
+            "That's what we're here for 🙌", "Day 5 done ✅ feeling unstoppable",
+            "Keep it up everyone!", "Who else crushed it today?",
+            "I did! Barely but it counts 😂", "Progress not perfection 💯",
+        ],
+        [
+            "Alright who slacked off today? 😂", "Not me! Done and dusted ✅",
+            "I literally almost forgot but did it last minute", "That still counts!",
+            "Progress > perfection", "We're all gonna make it 🚀",
+            "Day 7 streak baby!", "The hardest part is showing up",
+        ],
+        [
+            "Quick tip: set a daily alarm, game changer", "Facts, I do mine right after my morning coffee ☕",
+            "Morning routine gang 🌅", "Evening crew checking in too 🌙",
+            "Just hit my 2 week streak!", "Proud of everyone here",
+            "This is the most consistent I've ever been", "Same honestly 🙏",
+        ],
+        [
+            "Starting strong today 💪", "Love this energy!",
+            "Who's ready for week 2?", "ME! Let's keep pushing",
+            "The compound effect is real", "Small steps > big leaps",
+            "Checked in for today ✅", "Another one in the books 📚",
+        ],
     ]
 
-    created_users = []
-    created_groups = []
     stats = {"users": 0, "groups": 0, "members": 0, "messages": 0, "activities": 0}
+    created_users = []
 
     for u in SEED_USERS:
         existing = User.query.filter_by(email=u["email"]).first()
@@ -676,6 +712,7 @@ def seed_demo_data():
             created_users.append(user)
             stats["users"] += 1
 
+    created_groups = []
     for g in SEED_GROUPS:
         existing = Group.query.filter_by(name=g["name"]).first()
         if existing:
@@ -688,7 +725,8 @@ def seed_demo_data():
         created_groups.append(group)
         stats["groups"] += 1
 
-        for idx in g["member_idxs"]:
+        member_idxs = list(range(g["start"], g["start"] + 10))
+        for idx in member_idxs:
             user = created_users[idx]
             if not GroupMember.query.filter_by(user_id=user.id, group_id=group.id).first():
                 db.session.add(GroupMember(user_id=user.id, group_id=group.id))
@@ -705,7 +743,7 @@ def seed_demo_data():
 
         existing_msgs = Message.query.filter_by(group_id=group.id).count()
         if existing_msgs == 0:
-            convo = CHAT_TEMPLATES[gi % len(CHAT_TEMPLATES)]
+            convo = CHAT_POOLS[gi % len(CHAT_POOLS)]
             for ci, line in enumerate(convo):
                 member = members[ci % len(members)]
                 user = User.query.get(member.user_id)
@@ -713,7 +751,7 @@ def seed_demo_data():
                     group_id=group.id,
                     user_name=user.name,
                     content=line,
-                    user_image=user.picture or "https://api.dicebear.com/9.x/adventurer/svg?seed=default",
+                    user_image=user.picture or "",
                 )
                 msg.created_at = now - timedelta(hours=len(convo) - ci, minutes=random.randint(0, 30))
                 db.session.add(msg)
