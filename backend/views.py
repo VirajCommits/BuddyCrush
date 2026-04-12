@@ -8,15 +8,18 @@ from .extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
+<<<<<<< HEAD
 import re
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
 from .models import Group,GroupMember, User, UserActivity
+=======
+from .models import Group, GroupMember, User, UserActivity
+>>>>>>> 1da5129 (Deploying)
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date
 
 next_group_id = 1
-
 
 # Google OAuth Config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -41,7 +44,7 @@ GOOGLE_REDIRECT_URI = _normalize_oauth_redirect_uri(os.getenv("GOOGLE_REDIRECT_U
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
 # In-memory users database (for simplicity)
-users = {}
+users = {}  # Global dictionary to track all users who have logged in
 
 groups = []
 
@@ -70,8 +73,6 @@ def google_login():
         scope=["openid", "email", "profile"],
     )
     return redirect(request_uri)
-
-# views.py
 
 def google_callback():
     code = request.args.get("code")
@@ -132,7 +133,17 @@ def google_callback():
         db.session.add(user)
         db.session.commit()
 
-    # Set session data directly
+    # Track the user in our in-memory "users" dictionary.
+    # (For production, consider logging this event in a dedicated database table.)
+    global users
+    if email not in users:
+        users[email] = {
+            "name": user.name,
+            "email": user.email,
+            "picture": user.picture
+        }
+
+    # Set session data
     session["user"] = {
         "name": user.name,
         "email": user.email,
@@ -149,6 +160,7 @@ def profile():
     if user:
         return jsonify({"user": user})
     return jsonify({"error": "Not logged in"}), 401
+
 def test_redis():
     if request.method == "POST":
         session["test_key"] = "test_value"
@@ -156,6 +168,7 @@ def test_redis():
         return jsonify({"message": "Session value set!"})
     else:
         return jsonify({"test_key": session.get("test_key", "Not set")})
+
 def get_redis():
     return jsonify({"test_key": session.get("test_key", "Not set")})
 
@@ -165,7 +178,6 @@ def logout():
 
 def intro():
     return jsonify({"Hey!": "Damn you found the Backend link!"})
-
 
 def create_group():
     global next_group_id
@@ -182,7 +194,6 @@ def create_group():
         group_name = data["group"].get("name")
         group_description = data["group"].get("description")
     else:
-
         group_name = data.get("name")
         group_description = data.get("description")
 
@@ -207,12 +218,20 @@ def create_group():
     # Commit all changes
     db.session.commit()
 
-
     return jsonify({
         "message": f"Group '{group_name}' created successfully!",
         "group": new_group.to_dict()
     })
+
 def discover_groups():
+<<<<<<< HEAD
+=======
+    # Check if the user is logged in
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+
+>>>>>>> 1da5129 (Deploying)
     try:
         available_groups = Group.query.all()
         groups_data = [group.to_dict() for group in available_groups]
@@ -222,7 +241,6 @@ def discover_groups():
     return jsonify({"groups": groups_data})
 
 def join_group(group_id):
-    # 1. Retrieve user information from session
     user_info = session.get("user")
     if not user_info:
         return jsonify({"error": "Not logged in"}), 401
@@ -232,41 +250,31 @@ def join_group(group_id):
         return jsonify({"error": "Invalid user session"}), 400
 
     try:
-        # 2. Fetch the user from the database
         user = User.query.filter_by(email=user_email).first()
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        # 3. Fetch the group from the database
         group = Group.query.get(group_id)
         if not group:
             return jsonify({"error": "Group not found"}), 404
 
-        # 4. Check if the user is already a member of the group
         existing_membership = GroupMember.query.filter_by(user_id=user.id, group_id=group.id).first()
         if existing_membership:
             return jsonify({"message": "You are already a member of this group."}), 400
 
-        # 5. Create a new GroupMember entry
         new_membership = GroupMember(user_id=user.id, group_id=group.id)
         db.session.add(new_membership)
-
-        # 6. Commit the transaction
         db.session.commit()
-
-        # 7. Optional: Refresh the group to include the new member
         db.session.refresh(group)
 
         return jsonify({"message": f"Joined group '{group.name}' successfully!"}), 200
 
     except SQLAlchemyError as e:
         db.session.rollback()
-        # Log the error as needed
         return jsonify({"error": "An error occurred while joining the group."}), 500
-
     except Exception as e:
-        # Log the error as needed
         return jsonify({"error": "An unexpected error occurred."}), 500
+
 def complete_activity(group_id):
     user = session.get("user")
     if not user:
@@ -276,13 +284,11 @@ def complete_activity(group_id):
     if not group:
         return jsonify({"error": "Group not found"}), 404
 
-    # 1) Get the user from the database
     user_email = user["email"]
     user_obj = User.query.filter_by(email=user_email).first()
     if not user_obj:
         return jsonify({"error": "User not found"}), 404
 
-    # 2) Check if user has completed this group's habit today
     today = date.today()
     existing_record = UserActivity.query.filter_by(
         user_id=user_obj.id,
@@ -293,14 +299,11 @@ def complete_activity(group_id):
     if existing_record:
         return jsonify({"error": "Already completed today"}), 400
 
-    # 3) Otherwise create a new record
-    #    completed_at is auto-set to datetime.utcnow() if specified as a default,
-    #    or you can explicitly set it here if you prefer.
     activity = UserActivity(
         user_id=user_obj.id,
         group_id=group_id,
         completed_date=today,
-        completed_at=datetime.utcnow()  # only needed if you want to override or be explicit
+        completed_at=datetime.utcnow()
     )
     db.session.add(activity)
     db.session.commit()
@@ -310,8 +313,9 @@ def complete_activity(group_id):
         "group_id": group_id,
         "user_email": user_email,
         "completed_date": today.isoformat(),
-        "completed_at": activity.completed_at.isoformat()  # Return timestamp as well
+        "completed_at": activity.completed_at.isoformat()
     })
+
 def get_leaderboard(group_id):
     user = session.get("user")
     if not user:
@@ -321,7 +325,6 @@ def get_leaderboard(group_id):
     if not group:
         return jsonify({"error": "Group not found"}), 404
 
-    # Using a join to get user info
     from sqlalchemy import func
     leaderboard = (
         db.session.query(
@@ -334,11 +337,10 @@ def get_leaderboard(group_id):
         .join(UserActivity, User.id == UserActivity.user_id)
         .filter(UserActivity.group_id == group_id)
         .group_by(User.id)
-        .order_by(func.count(UserActivity.id).desc())  # sort by completion_count desc
+        .order_by(func.count(UserActivity.id).desc())
         .all()
     )
 
-    # Format leaderboard data
     leaderboard_data = []
     for entry in leaderboard:
         leaderboard_data.append({
@@ -353,6 +355,7 @@ def get_leaderboard(group_id):
         "group_id": group_id,
         "leaderboard": leaderboard_data
     })
+
 def get_group_activity(group_id):
     user = session.get("user")
     if not user:
@@ -362,7 +365,6 @@ def get_group_activity(group_id):
     if not group:
         return jsonify({"error": "Group not found"}), 404
 
-    # Join to get user info
     from sqlalchemy import desc
     activity_list = (
         db.session.query(
@@ -374,11 +376,10 @@ def get_group_activity(group_id):
         .join(User, UserActivity.user_id == User.id)
         .filter(UserActivity.group_id == group_id)
         .order_by(desc(UserActivity.completed_date))
-        .limit(10)  # last 10
+        .limit(10)
         .all()
     )
 
-    # Format
     data = []
     today = date.today()
     for record in activity_list:
@@ -394,32 +395,31 @@ def get_group_activity(group_id):
     return jsonify({"activity": data})
 
 def send_message_to_group(group_id):
-    """
-    HTTP endpoint for sending a message to a group.
-    This also emits a real-time 'group_message' event 
-    so that connected Socket.IO clients update instantly.
-    """
     user = session.get("user")
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
+<<<<<<< HEAD
     user_picture = user["picture"]
     group_id = int(group_id)  # ensure integer
+=======
+    group_id = int(group_id)
+>>>>>>> 1da5129 (Deploying)
     data = request.get_json()
     content = data.get("message")
     if not content:
         return jsonify({"error": "Message is required"}), 400
 
-    # Save to DB
     new_message = Message(
         group_id=group_id, 
         user_name=user["name"], 
         content=content,
-        user_image=user_picture
+        user_image=user["picture"]
     )
     db.session.add(new_message)
     db.session.commit()
 
+<<<<<<< HEAD
     payload = {
         "id": new_message.id,
         "user": user["name"],
@@ -427,6 +427,13 @@ def send_message_to_group(group_id):
         "user_image": user_picture,
         "created_at": new_message.created_at.isoformat(),
     }
+=======
+    socketio.emit(
+        "group_message", 
+        {"user": user["name"], "message": content, "user_image": user["picture"]}, 
+        room=group_id
+    )
+>>>>>>> 1da5129 (Deploying)
 
     # Broadcast to all clients in the group room
     socketio.emit("group_message", payload, room=group_id)
@@ -434,19 +441,12 @@ def send_message_to_group(group_id):
     return jsonify({"message": "Message sent successfully!", "chat_message": payload})
 
 def get_messages(group_id):
-    """
-    HTTP endpoint to fetch all messages for a group from the DB.
-    """
     user = session.get("user")
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
     group_id = int(group_id)
-    group_msgs = Message.query \
-        .filter_by(group_id=group_id) \
-        .order_by(Message.created_at.asc()) \
-        .all()
-
+    group_msgs = Message.query.filter_by(group_id=group_id).order_by(Message.created_at.asc()).all()
 
     messages_data = [
         {
@@ -460,33 +460,29 @@ def get_messages(group_id):
     ]
     return jsonify({"messages": messages_data})
 
+# New endpoint: tracks all users that have logged in
+def secret_tracking():
+    global users
+    return jsonify({"logged_in_users": list(users.values())})
+
 # ---------------------------
 # Socket.IO Event Handlers
 # ---------------------------
-
 @socketio.on("join_group")
 def handle_join_group(data):
-    """
-    Socket.IO event to join a group room for real-time updates.
-    """
     user = session.get("user")
     if not user:
         emit("error", {"error": "Not logged in"})
         return
 
-    group_id = int(data.get("group_id"))  # consistent with integer usage
+    group_id = int(data.get("group_id"))
     user_name = user["name"]
 
     join_room(group_id)
-    emit("message", {
-        "message": f"{user_name} has joined group {group_id}!"
-    }, room=group_id)
+    emit("message", {"message": f"{user_name} has joined group {group_id}!"}, room=group_id)
 
 @socketio.on("leave_group")
 def handle_leave_group(data):
-    """
-    Socket.IO event to leave a group room.
-    """
     user = session.get("user")
     if not user:
         emit("error", {"error": "Not logged in"})
@@ -496,16 +492,10 @@ def handle_leave_group(data):
     user_name = user["name"]
 
     leave_room(group_id)
-    emit("message", {
-        "message": f"{user_name} has left the group!"
-    }, room=group_id)
+    emit("message", {"message": f"{user_name} has left the group!"}, room=group_id)
 
 @socketio.on("send_message")
 def handle_send_message(data):
-    """
-    Socket.IO event for directly sending a message via WebSocket.
-    Also saves to DB, then emits to the group room.
-    """
     user = session.get("user")
     if not user:
         emit("error", {"error": "Not logged in"})
@@ -520,34 +510,32 @@ def handle_send_message(data):
     user_name = user["name"]
     user_picture = user["picture"]
 
-    # Save to DB
     new_message = Message(
         group_id=group_id, 
         user_name=user_name, 
         content=content,
-        user_image = user_picture
+        user_image=user_picture
     )
     db.session.add(new_message)
     db.session.commit()
 
-    # Emit to the group
-    emit("group_message", {
-        "user": user_name, 
-        "message": content
-    }, room=group_id)
+    emit("group_message", {"user": user_name, "message": content}, room=group_id)
+
 def check_habit_completion(group_id):
     user = session.get("user")
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
-    user_email = user["email"]
     today = date.today()
+<<<<<<< HEAD
 
     # Find the user in the database to get their user_id
     user_obj = User.query.filter_by(email=user_email).first()
     if not user_obj:
         return jsonify({"completed": False})
 
+=======
+>>>>>>> 1da5129 (Deploying)
     habit_completed = UserActivity.query.filter_by(
         user_id=user_obj.id,
         group_id=group_id,
@@ -555,6 +543,7 @@ def check_habit_completion(group_id):
     ).first()
 
     return jsonify({"completed": bool(habit_completed)})
+<<<<<<< HEAD
 
 def delete_group(group_id):
     user = session.get("user")
@@ -876,3 +865,5 @@ def admin_delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({"message": f"Deleted user '{name}'"})
+=======
+>>>>>>> 1da5129 (Deploying)
