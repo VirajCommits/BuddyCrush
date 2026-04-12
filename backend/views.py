@@ -8,14 +8,11 @@ from .extensions import db
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 import os
-<<<<<<< HEAD
 import re
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
 from .models import Group,GroupMember, User, UserActivity
-=======
 from .models import Group, GroupMember, User, UserActivity
->>>>>>> 1da5129 (Deploying)
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, date
 
@@ -224,14 +221,11 @@ def create_group():
     })
 
 def discover_groups():
-<<<<<<< HEAD
-=======
     # Check if the user is logged in
     user = session.get("user")
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
->>>>>>> 1da5129 (Deploying)
     try:
         available_groups = Group.query.all()
         groups_data = [group.to_dict() for group in available_groups]
@@ -399,12 +393,9 @@ def send_message_to_group(group_id):
     if not user:
         return jsonify({"error": "Not logged in"}), 401
 
-<<<<<<< HEAD
     user_picture = user["picture"]
     group_id = int(group_id)  # ensure integer
-=======
     group_id = int(group_id)
->>>>>>> 1da5129 (Deploying)
     data = request.get_json()
     content = data.get("message")
     if not content:
@@ -419,7 +410,6 @@ def send_message_to_group(group_id):
     db.session.add(new_message)
     db.session.commit()
 
-<<<<<<< HEAD
     payload = {
         "id": new_message.id,
         "user": user["name"],
@@ -427,13 +417,11 @@ def send_message_to_group(group_id):
         "user_image": user_picture,
         "created_at": new_message.created_at.isoformat(),
     }
-=======
     socketio.emit(
         "group_message", 
         {"user": user["name"], "message": content, "user_image": user["picture"]}, 
         room=group_id
     )
->>>>>>> 1da5129 (Deploying)
 
     # Broadcast to all clients in the group room
     socketio.emit("group_message", payload, room=group_id)
@@ -527,15 +515,12 @@ def check_habit_completion(group_id):
         return jsonify({"error": "Not logged in"}), 401
 
     today = date.today()
-<<<<<<< HEAD
 
     # Find the user in the database to get their user_id
     user_obj = User.query.filter_by(email=user_email).first()
     if not user_obj:
         return jsonify({"completed": False})
 
-=======
->>>>>>> 1da5129 (Deploying)
     habit_completed = UserActivity.query.filter_by(
         user_id=user_obj.id,
         group_id=group_id,
@@ -543,7 +528,6 @@ def check_habit_completion(group_id):
     ).first()
 
     return jsonify({"completed": bool(habit_completed)})
-<<<<<<< HEAD
 
 def delete_group(group_id):
     user = session.get("user")
@@ -865,5 +849,3 @@ def admin_delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({"message": f"Deleted user '{name}'"})
-=======
->>>>>>> 1da5129 (Deploying)
