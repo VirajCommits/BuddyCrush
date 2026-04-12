@@ -15,8 +15,8 @@ from .views import (
     get_leaderboard,
     test_redis,
     profile,
-<<<<<<< HEAD
-    get_redis,intro,
+    get_redis,
+    intro,
     check_habit_completion,
     delete_message,
     leave_group,
@@ -25,12 +25,7 @@ from .views import (
     admin_list_users,
     admin_delete_group,
     admin_delete_user,
-=======
-    get_redis,
-    intro,
-    check_habit_completion,
-    secret_tracking  # Import the new endpoint
->>>>>>> 1da5129 (Deploying)
+    secret_tracking,
 )
 
 def setup_routes(app):
@@ -48,20 +43,16 @@ def setup_routes(app):
         {"path": "/api/groups/<int:group_id>/leaderboard", "view_func": get_leaderboard, "methods": ["GET"]},
         {"path": "/api/groups/<int:group_id>/activity", "view_func": get_group_activity, "methods": ["GET"]},
         {"path": "/api/groups/<int:group_id>/check-habit", "view_func": check_habit_completion, "methods": ["GET"]},
-<<<<<<< HEAD
         {"path": "/api/groups/<int:group_id>/delete", "view_func": delete_group, "methods": ["DELETE"]},
         {"path": "/api/groups/<int:group_id>/leave", "view_func": leave_group, "methods": ["POST"]},
         {"path": "/api/messages/<int:message_id>/delete", "view_func": delete_message, "methods": ["DELETE"]},
-        {"path": "/test", "view_func": test_redis, "methods": ["POST" , "GET"]},
+        {"path": "/test", "view_func": test_redis, "methods": ["POST", "GET"]},
         {"path": "/api/add_secret", "view_func": seed_demo_data, "methods": ["GET", "POST"]},
         {"path": "/api/admin/groups", "view_func": admin_list_groups, "methods": ["GET"]},
         {"path": "/api/admin/users", "view_func": admin_list_users, "methods": ["GET"]},
         {"path": "/api/admin/groups/<int:group_id>", "view_func": admin_delete_group, "methods": ["DELETE"]},
         {"path": "/api/admin/users/<int:user_id>", "view_func": admin_delete_user, "methods": ["DELETE"]},
-=======
-        {"path": "/test", "view_func": test_redis, "methods": ["POST", "GET"]},
-        {"path": "/api/secret-tracking", "view_func": secret_tracking, "methods": ["GET"]},  # New endpoint
->>>>>>> 1da5129 (Deploying)
+        {"path": "/api/secret-tracking", "view_func": secret_tracking, "methods": ["GET"]},
     ]
 
     for route in routes:
