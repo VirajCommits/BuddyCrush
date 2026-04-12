@@ -1,42 +1,82 @@
+// src/components/Leaderboard.js
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-export default function LeaderboardComponent({ leaderboard }) {
+export default function LeaderboardComponent({ leaderboard }) { // Renamed to avoid name conflict with import
   if (leaderboard.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 opacity-60">
-        <span className="text-3xl mb-2">🏆</span>
-        <p className="text-sm text-[var(--text-muted)]">No completions yet.</p>
-      </div>
-    );
+    return <p style={styles.noData}>No completions yet.</p>;
   }
 
-  const getMedal = (index) => {
-    if (index === 0) return "🥇";
-    if (index === 1) return "🥈";
-    if (index === 2) return "🥉";
-    return `${index + 1}`;
-  };
-
   return (
-    <div className="space-y-2">
-      {leaderboard.map((user, index) => (
-        <div key={user.user_id} className="flex items-center gap-3 py-1.5">
-          <span className="text-sm font-bold w-6 text-center">
-            {getMedal(index)}
-          </span>
-          <img
-            src={user.user_picture || "https://via.placeholder.com/32"}
-            alt={`${user.user_name}'s avatar`}
-            width={32} height={32}
-            className="rounded-full object-cover shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-[var(--text-primary)] truncate">{user.user_name}</p>
-            <p className="text-xs text-[var(--text-muted)]">{user.completion_count} completions</p>
-          </div>
-        </div>
-      ))}
+    <div style={styles.container}>
+      <ol style={styles.list}>
+        {leaderboard.map((user) => (
+          <li key={user.user_id} style={styles.listItem}>
+            {/* Avatar */}
+            <img
+              src={user.user_picture || "https://via.placeholder.com/40"}
+              alt={`${user.user_name}'s avatar`}
+              width={40}
+              height={40}
+              style={styles.avatar}
+            />
+            {/* User Info */}
+            <div style={styles.userInfo}>
+              <span style={styles.userName}>{user.user_name}</span>
+              <span style={styles.completionCount}>
+                {user.completion_count} completions Viraj
+              </span>
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
+
+
+const styles = {
+  container: {
+    padding: "1px",
+    borderRadius: "8px",
+    maxWidth: "500px",
+  },
+  noData: {
+    color: "#ddd",
+    textAlign: "center",
+    fontSize: "14px",
+  },
+  list: {
+    listStyleType: "decimal",
+    paddingLeft: "3px",
+    margin: "0",
+  },
+  listItem: {
+    display: "flex",
+    alignItems: "center",
+    padding: "5px 0",
+  },
+  avatar: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    marginRight: "15px",
+    objectFit: "cover",
+    border: "2px solid #444",
+  },
+  userInfo: {
+    display: "flex",
+    flexDirection: "column",
+    flex: 1,
+  },
+  userName: {
+    fontWeight: "600",
+    fontSize: "14px",
+    color: "#fff",
+    marginBottom: "5px",
+  },
+  completionCount: {
+    fontSize: "12px",
+    color: "#aaa",
+  },
+};
